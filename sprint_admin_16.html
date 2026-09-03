@@ -137,7 +137,11 @@
                     
                     let laneVal = defaultLanes[currentMatchNum] || '';
                     let timeVal = rIdx === 0 ? r0Times[i] : '';
-                    let isReadonly = rIdx === 0 ? 'readonly tabindex="-1"' : '';
+                    let isReadonlyMeta = rIdx === 0 ? 'readonly tabindex="-1"' : '';
+                    
+                    // A nevek csak az első fordulóban (rIdx === 0) írhatók
+                    let isReadonlyName = rIdx === 0 ? '' : 'readonly tabindex="-1"';
+                    let nameInputClass = rIdx === 0 ? 'admin-input input-name' : 'admin-input input-name input-readonly';
 
                     const laneInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
                     const timeInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
@@ -148,12 +152,12 @@
                             <div class="match-header">
                                 <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonly} onchange="saveMatch('${mId}')">
-                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${timeOnChange} ${isReadonly}>
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} onchange="saveMatch('${mId}')">
+                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${timeOnChange} ${isReadonlyMeta}>
                                 </div>
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p1_name_${mId}" class="admin-input input-name" placeholder="Játékos 1" onchange="saveMatch('${mId}')">
+                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveMatch('${mId}')">
                                 <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" oninput="updateSvStates('${mId}')" onchange="saveMatch('${mId}')">
                                 <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
                                 <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" oninput="updateSvStates('${mId}')" onchange="saveMatch('${mId}')">
@@ -161,7 +165,7 @@
                                 <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveMatch('${mId}')">
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p2_name_${mId}" class="admin-input input-name" placeholder="Játékos 2" onchange="saveMatch('${mId}')">
+                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveMatch('${mId}')">
                                 <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" oninput="updateSvStates('${mId}')" onchange="saveMatch('${mId}')">
                                 <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
                                 <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" oninput="updateSvStates('${mId}')" onchange="saveMatch('${mId}')">
@@ -191,17 +195,14 @@
             const p1_s2 = getNum(`p1_s2_${mId}`);
             const p2_s2 = getNum(`p2_s2_${mId}`);
 
-            // 1. Szett SV állapot (Csak akkor aktív, ha egyenlő a fafa és nem üres)
             const sv1Enabled = (p1_s1 !== null && p2_s1 !== null && p1_s1 === p2_s1 && p1_s1 > 0);
             toggleField(`p1_sv1_${mId}`, sv1Enabled);
             toggleField(`p2_sv1_${mId}`, sv1Enabled);
 
-            // 2. Szett SV állapot
             const sv2Enabled = (p1_s2 !== null && p2_s2 !== null && p1_s2 === p2_s2 && p1_s2 > 0);
             toggleField(`p1_sv2_${mId}`, sv2Enabled);
             toggleField(`p2_sv2_${mId}`, sv2Enabled);
 
-            // Szettpontok kiszámítása az MSV eldöntéséhez
             let p1_s = 0, p2_s = 0;
             const p1_sv1 = getNum(`p1_sv1_${mId}`) || 0;
             const p2_sv1 = getNum(`p2_sv1_${mId}`) || 0;
@@ -222,7 +223,6 @@
                 else if (p2_sv2 > p1_sv2) p2_s++;
             }
 
-            // MSV állapot (Csak akkor aktív, ha 1-1 az állás)
             const msvEnabled = (p1_s === 1 && p2_s === 1);
             toggleField(`p1_msv_${mId}`, msvEnabled);
             toggleField(`p2_msv_${mId}`, msvEnabled);
@@ -285,16 +285,28 @@
 
         function calcAndAdvance(mId, d) {
             let p1_s = 0, p2_s = 0;
-            if (d.p1_s1 > d.p2_s1) p1_s++; else if (d.p2_s1 > d.p1_s1) p2_s++;
-            else if (d.p1_sv1 > d.p2_sv1) p1_s++; else if (d.p2_sv1 > d.p1_sv1) p2_s++;
 
-            if (d.p1_s2 > d.p2_s2) p1_s++; else if (d.p2_s2 > d.p1_s2) p2_s++;
-            else if (d.p1_sv2 > d.p2_sv2) p1_s++; else if (d.p2_sv2 > d.p1_sv2) p2_s++;
+            // 1. Szett pontozása (Fa vagy SV alapján)
+            if (d.p1_s1 > d.p2_s1) p1_s++; 
+            else if (d.p2_s1 > d.p1_s1) p2_s++;
+            else if (d.p1_sv1 > d.p2_sv1) p1_s++; 
+            else if (d.p2_sv1 > d.p1_sv1) p2_s++;
+
+            // 2. Szett pontozása (Fa vagy SV alapján)
+            if (d.p1_s2 > d.p2_s2) p1_s++; 
+            else if (d.p2_s2 > d.p1_s2) p2_s++;
+            else if (d.p1_sv2 > d.p2_sv2) p1_s++; 
+            else if (d.p2_sv2 > d.p1_sv2) p2_s++;
 
             let winner = null;
-            if (p1_s > p2_s) winner = 1;
-            else if (p2_s > p1_s) winner = 2;
-            else if (p1_s === 1 && p2_s === 1) {
+            
+            // Kizárólag a megnyert szettek száma határozza meg a győztest
+            if (p1_s > p2_s) {
+                winner = 1;
+            } else if (p2_s > p1_s) {
+                winner = 2;
+            } else if (p1_s === 1 && p2_s === 1) {
+                // Ha 1-1 a szettarány, a meccs Sudden Victory dönt
                 if (d.p1_msv > d.p2_msv) winner = 1;
                 else if (d.p2_msv > d.p1_msv) winner = 2;
             }
