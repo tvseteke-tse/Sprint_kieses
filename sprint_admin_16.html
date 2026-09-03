@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna - 16 Fős Admin</title>
+    <title>Sprint Torna Admin - 16 Fő</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -31,7 +31,7 @@
 
         /* Fordulók nézetei */
         .round-pane { display: none; }
-        .round-pane.active { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
+        .round-pane.active { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
 
         /* Meccskártya */
         .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
@@ -62,6 +62,7 @@
         <h2>Sprint Torna Admin - 16 Fő (WNBA-NBC Stílus)</h2>
     </div>
 
+    <!-- Fülek -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(0)">1/8 Döntő</button>
         <button class="tab-btn" onclick="switchTab(1)">Negyeddöntő</button>
@@ -69,37 +70,16 @@
         <button class="tab-btn" onclick="switchTab(3)">Döntő</button>
     </div>
 
+    <!-- Konténer -->
     <div class="content-area" id="panes-container"></div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
-            authDomain: "teke-eredmenyek.firebaseapp.com",
-            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
-            projectId: "teke-eredmenyek",
-            storageBucket: "teke-eredmenyek.firebasestorage.app"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
         function switchTab(idx) {
             const btns = document.querySelectorAll('.tab-btn');
             const panes = document.querySelectorAll('.round-pane');
 
             btns.forEach((btn, i) => btn.classList.toggle('active', i === idx));
             panes.forEach((pane, i) => pane.classList.toggle('active', i === idx));
-        }
-
-        function createInput(type, id, placeholder, className, title, defaultValue = '') {
-            const input = document.createElement('input');
-            input.type = type;
-            input.id = id;
-            input.placeholder = placeholder;
-            input.value = defaultValue;
-            input.className = `admin-input ${className}`;
-            if (title) input.title = title;
-            return input;
         }
 
         function renderBracket() {
@@ -116,75 +96,68 @@
 
                 for (let i = 0; i < matchCount; i++) {
                     const mId = `r${rIdx}_m${i}`;
-                    const card = document.createElement('div');
-                    card.className = 'match-card';
-
-                    // Pálya meghatározása: 1/8 döntőnél (rIdx === 0)
-                    // i = 0, 2, 4, 6 (1., 3., 5., 7. meccs -> páratlan) => "1-2"
-                    // i = 1, 3, 5, 7 (2., 4., 6., 8. meccs -> páros) => "3-4"
                     let defaultLane = '';
                     if (rIdx === 0) {
                         defaultLane = (i % 2 === 0) ? '1-2' : '3-4';
                     }
 
-                    // Fejléc (Pálya és Idő)
-                    const header = document.createElement('div');
-                    header.className = 'match-header';
-                    header.innerHTML = `<span>Meccs #${i + 1}</span>`;
-
-                    const metaDiv = document.createElement('div');
-                    metaDiv.innerHTML = 'Pálya: ';
-                    
-                    const laneInp = createInput('text', `lanes_${mId}`, '1-2', 'input-meta', 'Pálya', defaultLane);
-                    laneInp.onchange = () => saveMatch(mId);
-                    metaDiv.appendChild(laneInp);
-
-                    metaDiv.appendChild(document.createTextNode(' Idő: '));
-                    const timeInp = createInput('text', `time_${mId}`, '12:00', 'input-meta', 'Időpont');
-                    timeInp.onchange = () => saveMatch(mId);
-                    metaDiv.appendChild(timeInp);
-
-                    header.appendChild(metaDiv);
-                    card.appendChild(header);
-
-                    // Játékos 1 sora
-                    card.appendChild(createPlayerRow(mId, 1));
-                    
-                    // Játékos 2 sora
-                    card.appendChild(createPlayerRow(mId, 2));
-
-                    paneDiv.appendChild(card);
+                    const cardHtml = `
+                        <div class="match-card">
+                            <div class="match-header">
+                                <span>Meccs #${i + 1}</span>
+                                <div>
+                                    Pálya: <input type="text" id="lanes_${mId}" class="admin-input input-meta" value="${defaultLane}" placeholder="1-2" onchange="saveMatch('${mId}')">
+                                    Idő: <input type="text" id="time_${mId}" class="admin-input input-meta" placeholder="12:00" onchange="saveMatch('${mId}')">
+                                </div>
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="p1_name_${mId}" class="admin-input input-name" placeholder="Játékos 1" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv" placeholder="SV1" title="1. Szett SV" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv" placeholder="SV2" title="2. Szett SV" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv" placeholder="MSV" title="Meccs Sudden Victory" onchange="saveMatch('${mId}')">
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="p2_name_${mId}" class="admin-input input-name" placeholder="Játékos 2" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv" placeholder="SV1" title="1. Szett SV" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv" placeholder="SV2" title="2. Szett SV" onchange="saveMatch('${mId}')">
+                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv" placeholder="MSV" title="Meccs Sudden Victory" onchange="saveMatch('${mId}')">
+                            </div>
+                        </div>
+                    `;
+                    paneDiv.innerHTML += cardHtml;
                 }
                 container.appendChild(paneDiv);
                 matchCount /= 2;
             });
         }
 
-        function createPlayerRow(mId, pNum) {
-            const row = document.createElement('div');
-            row.className = 'p-row';
+        // Kártyák azonnali kirajzolása betöltéskor
+        renderBracket();
 
-            const p = `p${pNum}`;
-
-            const fields = [
-                { id: `${p}_name_${mId}`, type: 'text', ph: `Játékos ${pNum}`, cls: 'input-name', title: 'Név' },
-                { id: `${p}_s1_${mId}`, type: 'number', ph: 'Sz1', cls: 'input-num', title: '1. Szett Fa' },
-                { id: `${p}_sv1_${mId}`, type: 'number', ph: 'SV1', cls: 'input-sv', title: '1. Szett SV' },
-                { id: `${p}_s2_${mId}`, type: 'number', ph: 'Sz2', cls: 'input-num', title: '2. Szett Fa' },
-                { id: `${p}_sv2_${mId}`, type: 'number', ph: 'SV2', cls: 'input-sv', title: '2. Szett SV' },
-                { id: `${p}_msv_${mId}`, type: 'number', ph: 'MSV', cls: 'input-sv', title: 'Meccs Sudden Victory' }
-            ];
-
-            fields.forEach(f => {
-                const input = createInput(f.type, f.id, f.ph, f.cls, f.title);
-                input.onchange = () => saveMatch(mId);
-                row.appendChild(input);
-            });
-
-            return row;
+        // Firebase inicializálás
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+        
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            listenData();
+        } catch(e) {
+            console.error("Firebase hiba:", e);
         }
 
         function saveMatch(mId) {
+            if (!db) return;
             const getVal = (id) => document.getElementById(id)?.value || '';
             const getNum = (id) => parseInt(document.getElementById(id)?.value) || 0;
 
@@ -226,3 +199,35 @@
             }
 
             if (winner) {
+                const wName = winner === 1 ? d.p1_name : d.p2_name;
+                const parts = mId.split('_');
+                const r = parseInt(parts[0].replace('r','')), m = parseInt(parts[1].replace('m',''));
+                const nextId = `r${r+1}_m${Math.floor(m/2)}`;
+                const isP1 = (m % 2 === 0);
+                
+                if (wName && document.getElementById(`p1_name_${nextId}`)) {
+                    db.ref(`torna_16/${nextId}`).child(isP1 ? 'p1_name' : 'p2_name').set(wName);
+                }
+            }
+        }
+
+        function listenData() {
+            if (!db) return;
+            db.ref('torna_16').on('value', snap => {
+                const data = snap.val() || {};
+                Object.keys(data).forEach(mId => {
+                    const m = data[mId];
+                    ['lanes','time','p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv'].forEach(f => {
+                        const el = document.getElementById(`${f}_${mId}`);
+                        if (el && document.activeElement !== el) {
+                            if (m[f] !== undefined) {
+                                el.value = m[f];
+                            }
+                        }
+                    });
+                });
+            });
+        }
+    </script>
+</body>
+</html>
