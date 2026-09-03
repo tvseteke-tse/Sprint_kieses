@@ -50,6 +50,14 @@
             display: inline-block !important;
         }
 
+        /* Fixált pályamező stílusa */
+        .input-readonly {
+            background: #1e293b !important;
+            color: #94a3b8 !important;
+            border-color: #334155 !important;
+            cursor: not-allowed;
+        }
+
         .input-name { flex: 1; min-width: 110px; }
         .input-num { width: 42px; text-align: center; }
         .input-sv { width: 42px; text-align: center; border-color: var(--gold) !important; color: var(--gold) !important; }
@@ -106,7 +114,7 @@
                             <div class="match-header">
                                 <span>Meccs #${i + 1}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="admin-input input-meta" value="${defaultLane}" placeholder="1-2" onchange="saveMatch('${mId}')">
+                                    Pálya: <input type="text" id="lanes_${mId}" class="admin-input input-meta input-readonly" value="${defaultLane}" placeholder="1-2" readonly tabindex="-1">
                                     Idő: <input type="text" id="time_${mId}" class="admin-input input-meta" placeholder="12:00" onchange="saveMatch('${mId}')">
                                 </div>
                             </div>
@@ -135,10 +143,8 @@
             });
         }
 
-        // Kártyák azonnali kirajzolása betöltéskor
         renderBracket();
 
-        // Firebase inicializálás
         const firebaseConfig = {
             apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
             authDomain: "teke-eredmenyek.firebaseapp.com",
@@ -217,7 +223,7 @@
                 const data = snap.val() || {};
                 Object.keys(data).forEach(mId => {
                     const m = data[mId];
-                    ['lanes','time','p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv'].forEach(f => {
+                    ['time','p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv'].forEach(f => {
                         const el = document.getElementById(`${f}_${mId}`);
                         if (el && document.activeElement !== el) {
                             if (m[f] !== undefined) {
