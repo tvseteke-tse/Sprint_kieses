@@ -19,6 +19,18 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
 
+        #status-bar {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            background: #334155;
+            color: #f8fafc;
+        }
+        .status-success { background: #15803d !important; color: #fff !important; }
+        .status-error { background: #b91c1c !important; color: #fff !important; }
+
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); }
         .header-title-input {
             background: transparent;
@@ -69,6 +81,8 @@
 </head>
 <body>
 
+    <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
+
     <div class="header">
         <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" onchange="saveTitle(this.value)">
     </div>
@@ -83,6 +97,12 @@
     <div class="content-area" id="panes-container"></div>
 
     <script>
+        function showStatus(msg, isError = false) {
+            const sb = document.getElementById('status-bar');
+            sb.textContent = msg;
+            sb.className = isError ? 'status-error' : 'status-success';
+        }
+
         const firebaseConfig = {
             apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
             authDomain: "teke-eredmenyek.firebaseapp.com",
@@ -91,8 +111,14 @@
             storageBucket: "teke-eredmenyek.firebasestorage.app"
         };
         
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            showStatus("Firebase csatlakozva. Adatok betöltése...");
+        } catch (e) {
+            showStatus("Firebase indítási hiba: " + e.message, true);
+        }
 
         const progressionMap = {
             1:  { targetMatch: 10, targetPos: 'p1' }, 2:  { targetMatch: 9,  targetPos: 'p1' },
@@ -112,7 +138,6 @@
             document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
         }
 
-        // DOM Szerkezet felépítése egyszer az elején
         function initDOM() {
             const container = document.getElementById('panes-container');
             container.innerHTML = '';
@@ -167,8 +192,8 @@
             });
         }
 
-        // Adatbázis módosítása egyetlen függvénnyel
         function updateDB(mId, key, val) {
+            if (!db) return;
             const isNum = key.includes('_s') || key.includes('_sv') || key.includes('_msv');
             let parsedVal = val;
             
@@ -187,25 +212,31 @@
                 }
             }
 
-            db.ref(`torna_16/${mId}/${key}`).set(parsedVal);
+            db.ref(`torna_16/${mId}/${key}`).set(parsedVal, (error) => {
+                if (error) showStatus("Mentési Hiba: " + error.message, true);
+                else showStatus("Adat sikeresen mentve!");
+            });
         }
 
         function saveTitle(val) {
-            db.ref('torna_16/title').set(val);
+            if (!db) return;
+            db.ref('torna_16/title').set(val, (error) => {
+                if (error) showStatus("Cím mentési hiba: " + error.message, true);
+                else showStatus("Cím elmentve!");
+            });
         }
 
-        // Adatbázis szinkronizáció és logika futtatása
         function syncUI() {
+            if (!db) return;
             db.ref('torna_16').on('value', snap => {
+                showStatus("Adatok szinkronizálva (Firebase OK)");
                 const data = snap.val() || {};
 
-                // Cím frissítése
                 const titleEl = document.getElementById('admin_title');
                 if (titleEl && document.activeElement !== titleEl) {
                     titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 16 Fő';
                 }
 
-                // Meccsek adatainak szinkronizálása
                 for (let m = 1; m <= 15; m++) {
                     const mId = `m_${m}`;
                     const mData = data[mId] || {};
@@ -228,9 +259,10 @@
                         }
                     });
 
-                    // Szabályok és mező-aktiválások elbírálása
                     processMatchRules(mId, mData);
                 }
+            }, error => {
+                showStatus("Olvasási Hiba: " + error.message, true);
             });
         }
 
@@ -250,7 +282,7 @@
             toggleInput(`${mId}_p1_sv2`, sv2Active);
             toggleInput(`${mId}_p2_sv2`, sv2Active);
 
-            // Szett pontok kiszámítása
+            // Alap szettpontok
             let p1_sets = 0, p2_sets = 0;
 
             if (s1_1 !== null && s1_2 !== null) {
@@ -273,20 +305,22 @@
                 }
             }
 
-            // Meccs MSV aktiválása 1-1 szettállás esetén
+            // MSV aktiválása 1-1 szettállás esetén
             const msvActive = (p1_sets === 1 && p2_sets === 1);
             toggleInput(`${mId}_p1_msv`, msvActive);
             toggleInput(`${mId}_p2_msv`, msvActive);
+
+            // MSV hozzáadása a szettpontokhoz (+1 szettpont az MSV győztesének)
+            if (msvActive) {
+                const msv1 = getVal('p1_msv') || 0, msv2 = getVal('p2_msv') || 0;
+                if (msv1 > msv2) p1_sets++;      // 2-1 lesz
+                else if (msv2 > msv1) p2_sets++; // 1-2 lesz
+            }
 
             // Győztes meghatározása és automatikus továbbjuttatása
             let winner = null;
             if (p1_sets > p2_sets) winner = 1;
             else if (p2_sets > p1_sets) winner = 2;
-            else if (msvActive) {
-                const msv1 = getVal('p1_msv') || 0, msv2 = getVal('p2_msv') || 0;
-                if (msv1 > msv2) winner = 1;
-                else if (msv2 > msv1) winner = 2;
-            }
 
             if (winner) {
                 const winnerName = winner === 1 ? d.p1_name : d.p2_name;
@@ -295,9 +329,7 @@
 
                 if (nextStep && winnerName) {
                     const targetPath = `torna_16/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
-                    db.ref(targetPath).transaction(currentVal => {
-                        return winnerName;
-                    });
+                    db.ref(targetPath).transaction(currentVal => winnerName);
                 }
             }
         }
@@ -310,7 +342,6 @@
             else el.classList.add('input-disabled');
         }
 
-        // Indítás
         initDOM();
         syncUI();
     </script>
