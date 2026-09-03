@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna - Adminisztráció</title>
+    <title>Sprint Torna - 16 Fős Admin</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -20,8 +20,7 @@
         body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); flex-shrink: 0; }
-        .size-btns button { background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 5px; transition: 0.2s; }
-        .size-btns button.active { background: var(--accent); color: #0f172a; }
+        .header h2 { color: var(--accent); font-size: 1.4rem; }
 
         .bracket { display: flex; gap: 25px; overflow-x: auto; overflow-y: auto; flex-grow: 1; padding-bottom: 15px; align-items: stretch; }
         
@@ -40,11 +39,7 @@
 <body>
 
     <div class="header">
-        <h2>Sprint Torna Admin</h2>
-        <div class="size-btns">
-            <button id="b16" class="active" onclick="changeSize(16)">16-os Tábla</button>
-            <button id="b32" onclick="changeSize(32)">32-es Tábla</button>
-        </div>
+        <h2>Sprint Torna Admin - 16 Fős Tábla</h2>
     </div>
 
     <div class="bracket" id="bracket"></div>
@@ -61,34 +56,12 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentSize = 16;
-        let activeRef = null;
-
-        // Gombnyomásra lefutó méretváltó függvény
-        function changeSize(size) {
-            currentSize = size;
-            
-            // Gombok vizuális frissítése
-            document.getElementById('b16').classList.toggle('active', size === 16);
-            document.getElementById('b32').classList.toggle('active', size === 32);
-
-            // Adatbázis frissítése a kijelző felé
-            db.ref('config/size').set(size);
-
-            // Ágrajz újrarajzolása és adatfigyelés átállítása
-            renderBracket();
-            listenData();
-        }
-
         function renderBracket() {
             const container = document.getElementById('bracket');
             container.innerHTML = '';
             
-            const rounds = currentSize === 32 ? 
-                ['1/16 Döntő', '1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'] : 
-                ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
-                
-            let matchCount = currentSize / 2;
+            const rounds = ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
+            let matchCount = 8; // 16 fő / 2
 
             rounds.forEach((rName, rIdx) => {
                 const roundDiv = document.createElement('div');
@@ -145,7 +118,7 @@
                 p2_msv: parseInt(document.getElementById(`p2_msv_${mId}`).value) || 0,
             };
 
-            db.ref(`torna_${currentSize}/${mId}`).set(data);
+            db.ref(`torna_16/${mId}`).set(data);
             calcAndAdvance(mId, data);
         }
 
@@ -173,18 +146,13 @@
                 const isP1 = (m % 2 === 0);
                 
                 if (wName && document.getElementById(`p1_name_${nextId}`)) {
-                    db.ref(`torna_${currentSize}/${nextId}`).child(isP1 ? 'p1_name' : 'p2_name').set(wName);
+                    db.ref(`torna_16/${nextId}`).child(isP1 ? 'p1_name' : 'p2_name').set(wName);
                 }
             }
         }
 
         function listenData() {
-            if (activeRef) {
-                activeRef.off(); // Előző figyelő eltávolítása
-            }
-
-            activeRef = db.ref(`torna_${currentSize}`);
-            activeRef.on('value', snap => {
+            db.ref('torna_16').on('value', snap => {
                 const data = snap.val() || {};
                 Object.keys(data).forEach(mId => {
                     const m = data[mId];
@@ -196,8 +164,8 @@
             });
         }
 
-        // Kezdő inicializálás: beállítjuk a 16-os alapértelmezett méretet egyszer
-        changeSize(16);
+        renderBracket();
+        listenData();
     </script>
 </body>
 </html>
