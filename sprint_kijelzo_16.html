@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna - Kijelző</title>
+    <title>Sprint Torna - 16 Fős Kijelző</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -22,7 +22,7 @@
 
         .title-bar { text-align: center; font-size: 2.2rem; font-weight: 900; color: var(--accent); margin-bottom: 25px; letter-spacing: 2px; text-transform: uppercase; }
 
-        .bracket { display: flex; gap: 20px; justify-content: space-between; align-items: stretch; min-width: 1200px; }
+        .bracket { display: flex; gap: 20px; justify-content: space-between; align-items: stretch; min-width: 1000px; }
         .round { flex: 1; display: flex; flex-direction: column; justify-content: space-around; min-width: 220px; }
         .round-title { text-align: center; color: var(--accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 12px; text-transform: uppercase; }
 
@@ -37,7 +37,7 @@
 </head>
 <body>
 
-    <div class="title-bar">SPRINT EGYÉNI BAJNOKSÁG</div>
+    <div class="title-bar">SPRINT EGYÉNI BAJNOKSÁG (16 FŐ)</div>
     <div class="bracket" id="bracket"></div>
 
     <script>
@@ -52,17 +52,12 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentSize = 16;
-
         function renderBracket() {
             const container = document.getElementById('bracket');
             container.innerHTML = '';
             
-            const rounds = currentSize === 32 ? 
-                ['1/16 Döntő', '1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'] : 
-                ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
-                
-            let matchCount = currentSize / 2;
+            const rounds = ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
+            let matchCount = 8;
 
             rounds.forEach((rName, rIdx) => {
                 const roundDiv = document.createElement('div');
@@ -120,8 +115,8 @@
             return { p1_s, p2_s, winner };
         }
 
-        function attachDataListener() {
-            db.ref(`torna_${currentSize}`).on('value', snap => {
+        function listenData() {
+            db.ref('torna_16').on('value', snap => {
                 const data = snap.val() || {};
                 Object.keys(data).forEach(mId => {
                     const m = data[mId];
@@ -146,15 +141,7 @@
         }
 
         renderBracket();
-
-        db.ref('config/size').on('value', snap => {
-            const size = snap.val();
-            if (size && size !== currentSize) {
-                currentSize = size;
-                renderBracket();
-            }
-            attachDataListener();
-        });
+        listenData();
     </script>
 </body>
 </html>
