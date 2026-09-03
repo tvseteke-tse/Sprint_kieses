@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna Admin - 32 Fő</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --border: #334155;
+            --gold: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
+
+        #status-bar {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            background: #334155;
+            color: #f8fafc;
+        }
+        .status-success { background: #15803d !important; color: #fff !important; }
+        .status-error { background: #b91c1c !important; color: #fff !important; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); }
+        .header-title-input {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--accent);
+            font-size: 1.4rem;
+            font-weight: bold;
+            width: 100%;
+            outline: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+        .header-title-input:focus { background: #0f172a; border-color: var(--border); }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; overflow-x: auto; }
+        .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+
+        .content-area { flex-grow: 1; }
+        .round-pane { display: none; }
+        .round-pane.active { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
+
+        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .match-header { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 4px; }
+        
+        .p-row { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px; margin: 6px 0; border-radius: 6px; }
+
+        .admin-input {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #ffffff;
+            padding: 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+        .admin-input:focus { border-color: var(--accent); outline: none; }
+
+        .input-readonly { background: #1e293b; color: #94a3b8; border-color: #334155; cursor: not-allowed; }
+        .input-disabled { background: #0f172a; color: #475569; border-color: #1e293b; cursor: not-allowed; opacity: 0.4; }
+
+        .input-name { flex: 1; min-width: 110px; }
+        .input-num { width: 45px; text-align: center; }
+        .input-sv { width: 45px; text-align: center; border-color: var(--gold); color: var(--gold); }
+        .input-meta { width: 70px; text-align: center; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
+
+    <div class="header">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 32 Fő" onchange="saveTitle(this.value)">
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(0)">16 Közé Jutás</button>
+        <button class="tab-btn" onclick="switchTab(1)">8 Közé Jutás (Nyolcaddöntő)</button>
+        <button class="tab-btn" onclick="switchTab(2)">4 Közé Jutás (Negyeddöntő)</button>
+        <button class="tab-btn" onclick="switchTab(3)">Elődöntő</button>
+        <button class="tab-btn" onclick="switchTab(4)">Döntő</button>
+    </div>
+
+    <div class="content-area" id="panes-container"></div>
+
+    <script>
+        function showStatus(msg, isError = false) {
+            const sb = document.getElementById('status-bar');
+            sb.textContent = msg;
+            sb.className = isError ? 'status-error' : 'status-success';
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+        
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            showStatus("Firebase csatlakozva. Adatok betöltése...");
+        } catch (e) {
+            showStatus("Firebase indítási hiba: " + e.message, true);
+        }
+
+        // Továbbjutások a megadott kép alapján
+        const progressionMap = {
+            // 16 közé jutás -> Nyolcaddöntő (8 közé)
+            2:  { targetMatch: 17, targetPos: 'p1' }, 4:  { targetMatch: 17, targetPos: 'p2' },
+            1:  { targetMatch: 18, targetPos: 'p1' }, 3:  { targetMatch: 18, targetPos: 'p2' },
+            6:  { targetMatch: 19, targetPos: 'p1' }, 8:  { targetMatch: 19, targetPos: 'p2' },
+            5:  { targetMatch: 20, targetPos: 'p1' }, 7:  { targetMatch: 20, targetPos: 'p2' },
+            10: { targetMatch: 21, targetPos: 'p1' }, 12: { targetMatch: 21, targetPos: 'p2' },
+            9:  { targetMatch: 22, targetPos: 'p1' }, 11: { targetMatch: 22, targetPos: 'p2' },
+            14: { targetMatch: 23, targetPos: 'p1' }, 16: { targetMatch: 23, targetPos: 'p2' },
+            13: { targetMatch: 24, targetPos: 'p1' }, 15: { targetMatch: 24, targetPos: 'p2' },
+
+            // Nyolcaddöntő -> Negyeddöntő (4 közé)
+            18: { targetMatch: 25, targetPos: 'p1' }, 20: { targetMatch: 25, targetPos: 'p2' },
+            19: { targetMatch: 26, targetPos: 'p1' }, 17: { targetMatch: 26, targetPos: 'p2' },
+            22: { targetMatch: 27, targetPos: 'p1' }, 24: { targetMatch: 27, targetPos: 'p2' },
+            23: { targetMatch: 28, targetPos: 'p1' }, 21: { targetMatch: 28, targetPos: 'p2' },
+
+            // Negyeddöntő -> Elődöntő
+            28: { targetMatch: 29, targetPos: 'p1' }, 26: { targetMatch: 29, targetPos: 'p2' },
+            27: { targetMatch: 30, targetPos: 'p1' }, 25: { targetMatch: 30, targetPos: 'p2' },
+
+            // Elődöntő -> Döntő
+            30: { targetMatch: 31, targetPos: 'p1' }, 29: { targetMatch: 31, targetPos: 'p2' }
+        };
+
+        // Alapértelmezett pályák a képen látható táblázatok alapján
+        const defaultLanes = {
+            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
+            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
+            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
+            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '2-3'
+        };
+
+        const roundMatches = [
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+            [17, 18, 19, 20, 21, 22, 23, 24],
+            [25, 26, 27, 28],
+            [29, 30],
+            [31]
+        ];
+
+        function switchTab(idx) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+            document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
+        }
+
+        function initDOM() {
+            const container = document.getElementById('panes-container');
+            container.innerHTML = '';
+
+            roundMatches.forEach((matches, rIdx) => {
+                const paneDiv = document.createElement('div');
+                paneDiv.className = `round-pane ${rIdx === 0 ? 'active' : ''}`;
+                paneDiv.id = `pane_${rIdx}`;
+
+                matches.forEach(m => {
+                    const mId = `m_${m}`;
+                    const isR1 = (rIdx === 0);
+                    const nameAttr = isR1 ? '' : 'readonly class="admin-input input-name input-readonly"';
+
+                    paneDiv.innerHTML += `
+                        <div class="match-card">
+                            <div class="match-header">
+                                <span>Meccs #${m}</span>
+                                <div>
+                                    Pálya: <input type="text" id="${mId}_lanes" class="admin-input input-meta ${isR1 ? 'input-readonly' : ''}" ${isR1 ? 'readonly' : ''} onchange="updateDB('${mId}', 'lanes', this.value)">
+                                    Idő: <input type="text" id="${mId}_time" class="admin-input input-meta ${isR1 ? 'input-readonly' : ''}" ${isR1 ? 'readonly' : ''} onchange="updateDB('${mId}', 'time', this.value)">
+                                </div>
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="${mId}_p1_name" class="admin-input input-name" ${nameAttr} placeholder="Játékos 1" onchange="updateDB('${mId}', 'p1_name', this.value)">
+                                <input type="number" id="${mId}_p1_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p1_s1', this.value)">
+                                <input type="number" id="${mId}_p1_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p1_sv1', this.value)">
+                                <input type="number" id="${mId}_p1_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p1_s2', this.value)">
+                                <input type="number" id="${mId}_p1_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p1_sv2', this.value)">
+                                <input type="number" id="${mId}_p1_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p1_msv', this.value)">
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="${mId}_p2_name" class="admin-input input-name" ${nameAttr} placeholder="Játékos 2" onchange="updateDB('${mId}', 'p2_name', this.value)">
+                                <input type="number" id="${mId}_p2_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p2_s1', this.value)">
+                                <input type="number" id="${mId}_p2_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p2_sv1', this.value)">
+                                <input type="number" id="${mId}_p2_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p2_s2', this.value)">
+                                <input type="number" id="${mId}_p2_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p2_sv2', this.value)">
+                                <input type="number" id="${mId}_p2_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p2_msv', this.value)">
+                            </div>
+                        </div>
+                    `;
+                });
+                container.appendChild(paneDiv);
+            });
+        }
+
+        function updateDB(mId, key, val) {
+            if (!db) return;
+            const isNum = key.includes('_s') || key.includes('_sv') || key.includes('_msv');
+            let parsedVal = val;
+            
+            if (isNum) {
+                if (val === '') {
+                    parsedVal = '';
+                } else {
+                    parsedVal = parseInt(val, 10);
+                    if (key.endsWith('_s1') || key.endsWith('_s2')) {
+                        if (parsedVal > 180) {
+                            alert("A szett eredménye maximum 180 lehet!");
+                            document.getElementById(`${mId}_${key}`).value = '';
+                            parsedVal = '';
+                        }
+                    }
+                }
+            }
+
+            db.ref(`torna_32/${mId}/${key}`).set(parsedVal, (error) => {
+                if (error) showStatus("Mentési Hiba: " + error.message, true);
+                else showStatus("Adat sikeresen mentve!");
+            });
+        }
+
+        function saveTitle(val) {
+            if (!db) return;
+            db.ref('torna_32/title').set(val, (error) => {
+                if (error) showStatus("Cím mentési hiba: " + error.message, true);
+                else showStatus("Cím elmentve!");
+            });
+        }
+
+        function syncUI() {
+            if (!db) return;
+            db.ref('torna_32').on('value', snap => {
+                showStatus("Adatok szinkronizálva (Firebase OK)");
+                const data = snap.val() || {};
+
+                const titleEl = document.getElementById('admin_title');
+                if (titleEl && document.activeElement !== titleEl) {
+                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 32 Fő';
+                }
+
+                for (let m = 1; m <= 31; m++) {
+                    const mId = `m_${m}`;
+                    const mData = data[mId] || {};
+
+                    const fields = [
+                        'p1_name', 'p2_name', 'p1_s1', 'p2_s1', 'p1_sv1', 'p2_sv1',
+                        'p1_s2', 'p2_s2', 'p1_sv2', 'p2_sv2', 'p1_msv', 'p2_msv', 'lanes', 'time'
+                    ];
+
+                    fields.forEach(f => {
+                        const el = document.getElementById(`${mId}_${f}`);
+                        if (el && document.activeElement !== el) {
+                            let val = mData[f];
+                            if (val === undefined || val === null) {
+                                if (f === 'lanes') val = defaultLanes[m] || '';
+                                else val = '';
+                            }
+                            el.value = val;
+                        }
+                    });
+
+                    processMatchRules(mId, mData);
+                }
+            }, error => {
+                showStatus("Olvasási Hiba: " + error.message, true);
+            });
+        }
+
+        function processMatchRules(mId, d) {
+            const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
+
+            const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
+            const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
+
+            const sv1Active = (s1_1 !== null && s1_2 !== null && s1_1 === s1_2 && s1_1 > 0);
+            toggleInput(`${mId}_p1_sv1`, sv1Active);
+            toggleInput(`${mId}_p2_sv1`, sv1Active);
+
+            const sv2Active = (s2_1 !== null && s2_2 !== null && s2_1 === s2_2 && s2_1 > 0);
+            toggleInput(`${mId}_p1_sv2`, sv2Active);
+            toggleInput(`${mId}_p2_sv2`, sv2Active);
+
+            let p1_sets = 0, p2_sets = 0;
+
+            if (s1_1 !== null && s1_2 !== null) {
+                if (s1_1 > s1_2) p1_sets++;
+                else if (s1_2 > s1_1) p2_sets++;
+                else {
+                    const sv1_1 = getVal('p1_sv1') || 0, sv1_2 = getVal('p2_sv1') || 0;
+                    if (sv1_1 > sv1_2) p1_sets++;
+                    else if (sv1_2 > sv1_1) p2_sets++;
+                }
+            }
+
+            if (s2_1 !== null && s2_2 !== null) {
+                if (s2_1 > s2_2) p1_sets++;
+                else if (s2_2 > s2_1) p2_sets++;
+                else {
+                    const sv2_1 = getVal('p1_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
+                    if (sv2_1 > sv2_2) p1_sets++;
+                    else if (sv2_2 > sv2_1) p2_sets++;
+                }
+            }
+
+            const msvActive = (p1_sets === 1 && p2_sets === 1);
+            toggleInput(`${mId}_p1_msv`, msvActive);
+            toggleInput(`${mId}_p2_msv`, msvActive);
+
+            if (msvActive) {
+                const msv1 = getVal('p1_msv') || 0, msv2 = getVal('p2_msv') || 0;
+                if (msv1 > msv2) p1_sets++;
+                else if (msv2 > msv1) p2_sets++;
+            }
+
+            let winner = null;
+            if (p1_sets > p2_sets) winner = 1;
+            else if (p2_sets > p1_sets) winner = 2;
+
+            if (winner) {
+                const winnerName = winner === 1 ? d.p1_name : d.p2_name;
+                const matchNum = parseInt(mId.replace('m_', ''), 10);
+                const nextStep = progressionMap[matchNum];
+
+                if (nextStep && winnerName) {
+                    const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
+                    db.ref(targetPath).transaction(currentVal => winnerName);
+                }
+            }
+        }
+
+        function toggleInput(id, enable) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = !enable;
+            if (enable) el.classList.remove('input-disabled');
+            else el.classList.add('input-disabled');
+        }
+
+        initDOM();
+        syncUI();
+    </script>
+</body>
+</html>
