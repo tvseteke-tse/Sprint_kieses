@@ -133,7 +133,7 @@
 
         const r0Times = ['09:00', '09:00', '09:50', '09:50', '10:40', '10:40', '11:30', '11:30'];
 
-        function renderBracket(savedData) {
+        function buildUI() {
             const container = document.getElementById('panes-container');
             container.innerHTML = '';
             
@@ -149,24 +149,6 @@
                 for (let i = 0; i < matchCount; i++) {
                     const currentMatchNum = matchNum;
                     const mId = `m_${currentMatchNum}`;
-                    const mData = savedData[mId] || {};
-
-                    let laneVal = mData.lanes !== undefined ? mData.lanes : (defaultLanes[currentMatchNum] || '');
-                    let timeVal = mData.time !== undefined ? mData.time : (rIdx === 0 ? r0Times[i] : '');
-                    
-                    let p1_name = mData.p1_name || '';
-                    let p2_name = mData.p2_name || '';
-                    let p1_s1 = mData.p1_s1 !== undefined ? mData.p1_s1 : '';
-                    let p1_sv1 = mData.p1_sv1 !== undefined ? mData.p1_sv1 : '';
-                    let p1_s2 = mData.p1_s2 !== undefined ? mData.p1_s2 : '';
-                    let p1_sv2 = mData.p1_sv2 !== undefined ? mData.p1_sv2 : '';
-                    let p1_msv = mData.p1_msv !== undefined ? mData.p1_msv : '';
-
-                    let p2_s1 = mData.p2_s1 !== undefined ? mData.p2_s1 : '';
-                    let p2_sv1 = mData.p2_sv1 !== undefined ? mData.p2_sv1 : '';
-                    let p2_s2 = mData.p2_s2 !== undefined ? mData.p2_s2 : '';
-                    let p2_sv2 = mData.p2_sv2 !== undefined ? mData.p2_sv2 : '';
-                    let p2_msv = mData.p2_msv !== undefined ? mData.p2_msv : '';
 
                     let isReadonlyMeta = rIdx === 0 ? 'readonly tabindex="-1"' : '';
                     let isReadonlyName = rIdx === 0 ? '' : 'readonly tabindex="-1"';
@@ -180,25 +162,25 @@
                             <div class="match-header">
                                 <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} onchange="saveField('${mId}', 'lanes', this.value)">
-                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${isReadonlyMeta} onchange="saveField('${mId}', 'time', this.value)">
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" placeholder="1-2" ${isReadonlyMeta} onchange="saveField('${mId}', 'lanes', this.value)">
+                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" placeholder="12:00" ${isReadonlyMeta} onchange="saveField('${mId}', 'time', this.value)">
                                 </div>
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" value="${p1_name}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveField('${mId}', 'p1_name', this.value)">
-                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" value="${p1_s1}" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s1')" oninput="updateSvStates('${mId}')">
-                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" value="${p1_sv1}" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv1', this.value)">
-                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" value="${p1_s2}" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s2')" oninput="updateSvStates('${mId}')">
-                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" value="${p1_sv2}" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv2', this.value)">
-                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" value="${p1_msv}" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p1_msv', this.value)">
+                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveField('${mId}', 'p1_name', this.value)">
+                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s1')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv1', this.value)">
+                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s2')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv2', this.value)">
+                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p1_msv', this.value)">
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" value="${p2_name}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveField('${mId}', 'p2_name', this.value)">
-                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" value="${p2_s1}" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s1')" oninput="updateSvStates('${mId}')">
-                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" value="${p2_sv1}" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv1', this.value)">
-                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" value="${p2_s2}" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s2')" oninput="updateSvStates('${mId}')">
-                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" value="${p2_sv2}" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv2', this.value)">
-                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" value="${p2_msv}" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p2_msv', this.value)">
+                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveField('${mId}', 'p2_name', this.value)">
+                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s1')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv1', this.value)">
+                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s2')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv2', this.value)">
+                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p2_msv', this.value)">
                             </div>
                         </div>
                     `;
@@ -208,11 +190,9 @@
                 container.appendChild(paneDiv);
                 matchCount /= 2;
             });
-
-            for (let i = 1; i <= 15; i++) {
-                updateSvStates(`m_${i}`);
-            }
         }
+
+        buildUI();
 
         function handleScoreChange(inputEl, mId, fieldName) {
             if (!inputEl) return;
@@ -294,7 +274,7 @@
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
-            loadInitialData();
+            initRealtimeSync();
         } catch(e) {
             console.error("Firebase hiba:", e);
         }
@@ -363,28 +343,48 @@
                         const targetId = `m_${nextStep.targetMatch}`;
                         const targetField = `${nextStep.targetPos}_name`;
                         db.ref(`torna_16/${targetId}/${targetField}`).set(wName);
-                        
-                        const targetEl = document.getElementById(`${targetField}_${targetId}`);
-                        if (targetEl) targetEl.value = wName;
                     }
                 }
             });
         }
 
-        function loadInitialData() {
-            if (!db) {
-                renderBracket({});
-                return;
-            }
-            db.ref('torna_16').once('value', snap => {
+        function initRealtimeSync() {
+            if (!db) return;
+
+            db.ref('torna_16').on('value', snap => {
                 const data = snap.val() || {};
                 
                 if (data.title !== undefined) {
                     const titleEl = document.getElementById('admin_title');
-                    if (titleEl) titleEl.value = data.title;
+                    if (titleEl && document.activeElement !== titleEl) {
+                        titleEl.value = data.title;
+                    }
                 }
 
-                renderBracket(data);
+                for (let i = 1; i <= 15; i++) {
+                    const mId = `m_${i}`;
+                    const m = data[mId] || {};
+
+                    const fields = [
+                        'p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1',
+                        'p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv','time','lanes'
+                    ];
+
+                    fields.forEach(f => {
+                        const el = document.getElementById(`${f}_${mId}`);
+                        if (el && document.activeElement !== el) {
+                            if (m[f] !== undefined && m[f] !== null) {
+                                el.value = m[f];
+                            } else {
+                                if (f === 'lanes') el.value = defaultLanes[i] || '';
+                                else if (f === 'time' && i <= 8) el.value = r0Times[i-1] || '';
+                                else el.value = '';
+                            }
+                        }
+                    });
+
+                    updateSvStates(mId);
+                }
             });
         }
     </script>
