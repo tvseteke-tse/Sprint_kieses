@@ -84,31 +84,29 @@
             panes.forEach((pane, i) => pane.classList.toggle('active', i === idx));
         }
 
-        // A képed szerinti pontos továbbjutási és pálya térkép
-        // Forrás matchNum (1-14) -> Cél matchNum (9-15) + Melyik játékos helyre kerül (p1 / p2)
         const progressionMap = {
-            1:  { targetMatch: 10, targetPos: 'p1' }, // 1. Gy -> 10. meccs P1
-            2:  { targetMatch: 9,  targetPos: 'p1' }, // 2. Gy -> 9. meccs P1
-            3:  { targetMatch: 10, targetPos: 'p2' }, // 3. Gy -> 10. meccs P2
-            4:  { targetMatch: 9,  targetPos: 'p2' }, // 4. Gy -> 9. meccs P2
-            5:  { targetMatch: 12, targetPos: 'p1' }, // 5. Gy -> 12. meccs P1
-            6:  { targetMatch: 11, targetPos: 'p1' }, // 6. Gy -> 11. meccs P1
-            7:  { targetMatch: 12, targetPos: 'p2' }, // 7. Gy -> 12. meccs P2
-            8:  { targetMatch: 11, targetPos: 'p2' }, // 8. Gy -> 11. meccs P2
-            9:  { targetMatch: 14, targetPos: 'p1' }, // 9. Gy -> 14. meccs P1
-            10: { targetMatch: 13, targetPos: 'p1' }, // 10. Gy -> 13. meccs P1
-            11: { targetMatch: 14, targetPos: 'p2' }, // 11. Gy -> 14. meccs P2
-            12: { targetMatch: 13, targetPos: 'p2' }, // 12. Gy -> 13. meccs P2
-            13: { targetMatch: 15, targetPos: 'p2' }, // 13. Gy -> 15. meccs P2
-            14: { targetMatch: 15, targetPos: 'p1' }  // 14. Gy -> 15. meccs P1
+            1:  { targetMatch: 10, targetPos: 'p1' },
+            2:  { targetMatch: 9,  targetPos: 'p1' },
+            3:  { targetMatch: 10, targetPos: 'p2' },
+            4:  { targetMatch: 9,  targetPos: 'p2' },
+            5:  { targetMatch: 12, targetPos: 'p1' },
+            6:  { targetMatch: 11, targetPos: 'p1' },
+            7:  { targetMatch: 12, targetPos: 'p2' },
+            8:  { targetMatch: 11, targetPos: 'p2' },
+            9:  { targetMatch: 14, targetPos: 'p1' },
+            10: { targetMatch: 13, targetPos: 'p1' },
+            11: { targetMatch: 14, targetPos: 'p2' },
+            12: { targetMatch: 13, targetPos: 'p2' },
+            13: { targetMatch: 15, targetPos: 'p2' },
+            14: { targetMatch: 15, targetPos: 'p1' }
         };
 
-        // Alapértelmezett pályák a táblázat alapján
+        // A Döntő (15. meccs) pályája 2-3-ra módosítva
         const defaultLanes = {
             1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
             9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4',
             13: '1-2', 14: '3-4',
-            15: '1-2'
+            15: '2-3'
         };
 
         const r0Times = ['09:00', '09:00', '09:50', '09:50', '10:40', '10:40', '11:30', '11:30'];
@@ -143,7 +141,7 @@
                             <div class="match-header">
                                 <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonly}>
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonly} onchange="saveMatch('${mId}')">
                                     Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${timeOnChange} ${isReadonly}>
                                 </div>
                             </div>
