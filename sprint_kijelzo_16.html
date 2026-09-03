@@ -3,63 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna - 16 Fős Kijelző (WNBA-NBC)</title>
+    <title>Sprint Torna Kijelző - 16 Fő</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
-            --bg: #0f172a;
+            --bg: #0b0f19;
             --panel: #1e293b;
             --accent: #38bdf8;
             --text: #f8fafc;
             --border: #334155;
-            --winner: #16a34a;
             --gold: #f59e0b;
+            --winner: #10b981;
+            --loser: #ef4444;
+            --card-bg: #151d2a;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
+        body { background-color: var(--bg); color: var(--text); padding: 15px; min-height: 100vh; display: flex; flex-direction: column; }
 
-        .title-bar { text-align: center; font-size: 2rem; font-weight: 900; color: var(--accent); margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase; }
+        header {
+            text-align: center;
+            padding: 10px 20px;
+            background: var(--panel);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
 
-        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-shrink: 0; }
-        .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
-        .tab-btn:hover { background: #334155; }
-        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
+        header h1 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
 
-        .content-area { flex-grow: 1; }
+        .bracket-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            flex-grow: 1;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
 
-        .round-pane { display: none; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 20px; }
-        .round-pane.active { display: grid; }
+        .round-column {
+            flex: 1;
+            min-width: 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+        }
 
-        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .match-info { display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .round-title {
+            text-align: center;
+            background: var(--panel);
+            color: var(--accent);
+            padding: 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+        }
 
-        .table-view { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .table-view th { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; padding: 4px; text-align: center; }
-        .table-view td { padding: 6px; text-align: center; font-weight: bold; font-size: 0.95rem; }
-        
-        .p-name-cell { text-align: left !important; width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem !important; }
-        
-        tr.p-row { background: #0f172a; border-radius: 4px; }
-        tr.p-row.winner { background: #14532d; color: #fff; }
+        .match-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            height: 100%;
+            gap: 15px;
+        }
 
-        .badge-set { background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; }
-        .badge-total { color: var(--accent); }
+        .match-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .match-meta {
+            background: #0f172a;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .player-row {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            border-bottom: 1px solid #1e293b;
+            font-size: 0.85rem;
+        }
+
+        .player-row:last-child {
+            border-bottom: none;
+        }
+
+        .player-row.winner {
+            background: rgba(16, 185, 129, 0.15);
+        }
+
+        .player-name {
+            flex-grow: 1;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .player-row.winner .player-name {
+            color: var(--winner);
+            font-weight: bold;
+        }
+
+        .scores-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .score-box {
+            width: 28px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            border-radius: 3px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Színkódoló osztályok */
+        .score-box.win {
+            color: var(--winner) !important;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+        }
+
+        .score-box.loss {
+            color: var(--loser) !important;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+        }
+
+        .score-box.draw {
+            color: var(--gold) !important;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+        }
+
+        .score-box.sp {
+            background: var(--accent);
+            color: #0f172a !important;
+            font-size: 0.85rem;
+            margin-left: 4px;
+            border: none !important;
+        }
     </style>
 </head>
 <body>
 
-    <div class="title-bar">WNBA-NBC SPRINT BAJNOKSÁG (16 FŐ)</div>
+    <header>
+        <h1 id="display_title">Sprint Torna - 16 Fő</h1>
+    </header>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab(0)">1/8 Döntő</button>
-        <button class="tab-btn" onclick="showTab(1)">Negyeddöntő</button>
-        <button class="tab-btn" onclick="showTab(2)">Elődöntő</button>
-        <button class="tab-btn" onclick="showTab(3)">Döntő</button>
+    <div class="bracket-container">
+        <!-- Nyolcaddöntő -->
+        <div class="round-column">
+            <div class="round-title">Nyolcaddöntő</div>
+            <div class="match-list" id="col_r0"></div>
+        </div>
+
+        <!-- Negyeddöntő -->
+        <div class="round-column">
+            <div class="round-title">Negyeddöntő</div>
+            <div class="match-list" id="col_r1"></div>
+        </div>
+
+        <!-- Elődöntő -->
+        <div class="round-column">
+            <div class="round-title">Elődöntő</div>
+            <div class="match-list" id="col_r2"></div>
+        </div>
+
+        <!-- Döntő -->
+        <div class="round-column">
+            <div class="round-title">Döntő</div>
+            <div class="match-list" id="col_r3"></div>
+        </div>
     </div>
-
-    <div class="content-area" id="panes-container"></div>
 
     <script>
         const firebaseConfig = {
@@ -69,141 +208,168 @@
             projectId: "teke-eredmenyek",
             storageBucket: "teke-eredmenyek.firebasestorage.app"
         };
-        
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        function showTab(idx) {
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-            document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
-        }
+        const matchStructure = [
+            { roundIdx: 0, matches: [1, 2, 3, 4, 5, 6, 7, 8] },
+            { roundIdx: 1, matches: [9, 10, 11, 12] },
+            { roundIdx: 2, matches: [13, 14] },
+            { roundIdx: 3, matches: [15] }
+        ];
 
-        function renderBracket() {
-            const container = document.getElementById('panes-container');
-            container.innerHTML = '';
-            
-            const rounds = ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
-            let matchCount = 8;
-
-            rounds.forEach((rName, rIdx) => {
-                const paneDiv = document.createElement('div');
-                paneDiv.className = `round-pane ${rIdx === 0 ? 'active' : ''}`;
-
-                for (let i = 0; i < matchCount; i++) {
-                    const mId = `r${rIdx}_m${i}`;
-                    const card = document.createElement('div');
-                    card.className = 'match-card';
-                    card.innerHTML = `
-                        <div class="match-info">
-                            <span>Meccs #${i + 1}</span>
-                            <span>Pálya: <span id="lanes_${mId}">-</span> | Idő: <span id="time_${mId}">-</span></span>
+        function initBracket() {
+            matchStructure.forEach(r => {
+                const col = document.getElementById(`col_r${r.roundIdx}`);
+                col.innerHTML = '';
+                r.matches.forEach(mNum => {
+                    col.innerHTML += `
+                        <div class="match-card" id="card_m_${mNum}">
+                            <div class="match-meta">
+                                <span>Meccs #${mNum}</span>
+                                <span id="meta_m_${mNum}">-</span>
+                            </div>
+                            <div class="player-row" id="p1_row_m_${mNum}">
+                                <div class="player-name" id="p1_name_m_${mNum}">-</div>
+                                <div class="scores-group" id="p1_scores_m_${mNum}"></div>
+                            </div>
+                            <div class="player-row" id="p2_row_m_${mNum}">
+                                <div class="player-name" id="p2_name_m_${mNum}">-</div>
+                                <div class="scores-group" id="p2_scores_m_${mNum}"></div>
+                            </div>
                         </div>
-                        <table class="table-view">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left;">Játékos</th>
-                                    <th>Össz.</th>
-                                    <th>SV</th>
-                                    <th>Szett</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="p-row" id="p1_row_${mId}">
-                                    <td class="p-name-cell" id="p1_name_${mId}">-</td>
-                                    <td class="badge-total" id="p1_tot_${mId}">0</td>
-                                    <td id="p1_sv_${mId}">-</td>
-                                    <td><span class="badge-set" id="p1_sets_${mId}">0</span></td>
-                                </tr>
-                                <tr class="p-row" id="p2_row_${mId}">
-                                    <td class="p-name-cell" id="p2_name_${mId}">-</td>
-                                    <td class="badge-total" id="p2_tot_${mId}">0</td>
-                                    <td id="p2_sv_${mId}">-</td>
-                                    <td><span class="badge-set" id="p2_sets_${mId}">0</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
                     `;
-                    paneDiv.appendChild(card);
-                }
-                container.appendChild(paneDiv);
-                matchCount /= 2;
-            });
-        }
-
-        function calcMatch(d) {
-            if (!d) return { p1_s: 0, p2_s: 0, p1_tot: 0, p2_tot: 0, winner: null };
-
-            let p1_s = 0, p2_s = 0;
-            const p1_tot = (d.p1_s1 || 0) + (d.p1_s2 || 0);
-            const p2_tot = (d.p2_s1 || 0) + (d.p2_s2 || 0);
-
-            if (d.p1_s1 > d.p2_s1) p1_s++; 
-            else if (d.p2_s1 > d.p1_s1) p2_s++;
-            else if (d.p1_sv1 || d.p2_sv1) {
-                if ((d.p1_sv1 || 0) > (d.p2_sv1 || 0)) p1_s++;
-                else if ((d.p2_sv1 || 0) > (d.p1_sv1 || 0)) p2_s++;
-            }
-
-            if (d.p1_s2 > d.p2_s2) p1_s++; 
-            else if (d.p2_s2 > d.p1_s2) p2_s++;
-            else if (d.p1_sv2 || d.p2_sv2) {
-                if ((d.p1_sv2 || 0) > (d.p2_sv2 || 0)) p1_s++;
-                else if ((d.p2_sv2 || 0) > (d.p1_sv2 || 0)) p2_s++;
-            }
-
-            let winner = null;
-            if (p1_s > p2_s) winner = 1;
-            else if (p2_s > p1_s) winner = 2;
-            else if (p1_s === 1 && p2_s === 1) {
-                if ((d.p1_msv || 0) > (d.p2_msv || 0)) winner = 1;
-                else if ((d.p2_msv || 0) > (d.p1_msv || 0)) winner = 2;
-            }
-
-            return { p1_s, p2_s, p1_tot, p2_tot, winner };
-        }
-
-        function listenData() {
-            db.ref('torna_16').on('value', snap => {
-                const data = snap.val() || {};
-                Object.keys(data).forEach(mId => {
-                    const m = data[mId];
-                    const res = calcMatch(m);
-
-                    const lanes = document.getElementById(`lanes_${mId}`);
-                    const time = document.getElementById(`time_${mId}`);
-                    if (lanes) lanes.innerText = m.lanes || '-';
-                    if (time) time.innerText = m.time || '-';
-
-                    const p1Name = document.getElementById(`p1_name_${mId}`);
-                    const p2Name = document.getElementById(`p2_name_${mId}`);
-                    if (p1Name) p1Name.innerText = m.p1_name || '-';
-                    if (p2Name) p2Name.innerText = m.p2_name || '-';
-
-                    const p1Tot = document.getElementById(`p1_tot_${mId}`);
-                    const p2Tot = document.getElementById(`p2_tot_${mId}`);
-                    if (p1Tot) p1Tot.innerText = res.p1_tot;
-                    if (p2Tot) p2Tot.innerText = res.p2_tot;
-
-                    const p1Sv = document.getElementById(`p1_sv_${mId}`);
-                    const p2Sv = document.getElementById(`p2_sv_${mId}`);
-                    if (p1Sv) p1Sv.innerText = m.p1_msv || '-';
-                    if (p2Sv) p2Sv.innerText = m.p2_msv || '-';
-
-                    const p1Sets = document.getElementById(`p1_sets_${mId}`);
-                    const p2Sets = document.getElementById(`p2_sets_${mId}`);
-                    if (p1Sets) p1Sets.innerText = res.p1_s;
-                    if (p2Sets) p2Sets.innerText = res.p2_s;
-
-                    const r1 = document.getElementById(`p1_row_${mId}`);
-                    const r2 = document.getElementById(`p2_row_${mId}`);
-                    if (r1) r1.classList.toggle('winner', res.winner === 1);
-                    if (r2) r2.classList.toggle('winner', res.winner === 2);
                 });
             });
         }
 
-        renderBracket();
-        listenData();
+        initBracket();
+
+        function getColorClass(v1, v2) {
+            if (v1 > v2) return 'win';
+            if (v1 < v2) return 'loss';
+            return 'draw';
+        }
+
+        db.ref('torna_16').on('value', snap => {
+            const data = snap.val() || {};
+
+            // Címsor frissítése
+            if (data.title) {
+                document.getElementById('display_title').innerText = data.title;
+            }
+
+            // Meccsek adatai
+            for (let i = 1; i <= 15; i++) {
+                const mId = `m_${i}`;
+                const m = data[mId] || {};
+
+                // Pálya és Idő infó
+                const metaEl = document.getElementById(`meta_${mId}`);
+                if (metaEl) {
+                    let metaText = [];
+                    if (m.lanes) metaText.push(`Pálya: ${m.lanes}`);
+                    if (m.time) metaText.push(`${m.time}`);
+                    metaEl.innerText = metaText.join(' | ') || '-';
+                }
+
+                // Játékos nevek
+                const p1Name = m.p1_name || '-';
+                const p2Name = m.p2_name || '-';
+                document.getElementById(`p1_name_${mId}`).innerText = p1Name;
+                document.getElementById(`p2_name_${mId}`).innerText = p2Name;
+
+                // Számítások
+                const p1_s1 = parseInt(m.p1_s1) || 0;
+                const p2_s1 = parseInt(m.p2_s1) || 0;
+                const p1_sv1 = parseInt(m.p1_sv1) || 0;
+                const p2_sv1 = parseInt(m.p2_sv1) || 0;
+
+                const p1_s2 = parseInt(m.p1_s2) || 0;
+                const p2_s2 = parseInt(m.p2_s2) || 0;
+                const p1_sv2 = parseInt(m.p1_sv2) || 0;
+                const p2_sv2 = parseInt(m.p2_sv2) || 0;
+
+                const p1_msv = parseInt(m.p1_msv) || 0;
+                const p2_msv = parseInt(m.p2_msv) || 0;
+
+                let p1_sp = 0, p2_sp = 0;
+
+                if (m.p1_s1 !== undefined && m.p2_s1 !== undefined && m.p1_s1 !== '' && m.p2_s1 !== '') {
+                    if (p1_s1 > p2_s1) p1_sp++;
+                    else if (p2_s1 > p1_s1) p2_sp++;
+                    else if (p1_sv1 > p2_sv1) p1_sp++;
+                    else if (p2_sv1 > p1_sv1) p2_sp++;
+                }
+
+                if (m.p1_s2 !== undefined && m.p2_s2 !== undefined && m.p1_s2 !== '' && m.p2_s2 !== '') {
+                    if (p1_s2 > p2_s2) p1_sp++;
+                    else if (p2_s2 > p1_s2) p2_sp++;
+                    else if (p1_sv2 > p2_sv2) p1_sp++;
+                    else if (p2_sv2 > p1_sv2) p2_sp++;
+                }
+
+                // Győztes meghatározása
+                let winner = 0;
+                if (p1_sp > p2_sp) winner = 1;
+                else if (p2_sp > p1_sp) winner = 2;
+                else if (p1_sp === 1 && p2_sp === 1) {
+                    if (p1_msv > p2_msv) winner = 1;
+                    else if (p2_msv > p1_msv) winner = 2;
+                }
+
+                // Kiemelt sorok frissítése
+                const p1Row = document.getElementById(`p1_row_${mId}`);
+                const p2Row = document.getElementById(`p2_row_${mId}`);
+                p1Row.classList.toggle('winner', winner === 1);
+                p2Row.classList.toggle('winner', winner === 2);
+
+                // Eredmény dobozok kirajzolása (P1)
+                let p1HTML = '';
+                if (m.p1_s1 !== undefined && m.p1_s1 !== '') {
+                    p1HTML += `<div class="score-box ${getColorClass(p1_s1, p2_s1)}">${m.p1_s1}</div>`;
+                }
+                if (p1_sv1 > 0 || p2_sv1 > 0) {
+                    p1HTML += `<div class="score-box ${getColorClass(p1_sv1, p2_sv1)}">${m.p1_sv1 || 0}</div>`;
+                }
+                if (m.p1_s2 !== undefined && m.p1_s2 !== '') {
+                    p1HTML += `<div class="score-box ${getColorClass(p1_s2, p2_s2)}">${m.p1_s2}</div>`;
+                }
+                if (p1_sv2 > 0 || p2_sv2 > 0) {
+                    p1HTML += `<div class="score-box ${getColorClass(p1_sv2, p2_sv2)}">${m.p1_sv2 || 0}</div>`;
+                }
+                if (p1_sp > 0 || p2_sp > 0) {
+                    p1HTML += `<div class="score-box sp">${p1_sp}</div>`;
+                }
+                if (p1_msv > 0 || p2_msv > 0) {
+                    p1HTML += `<div class="score-box ${getColorClass(p1_msv, p2_msv)}">${m.p1_msv || 0}</div>`;
+                }
+                document.getElementById(`p1_scores_${mId}`).innerHTML = p1HTML;
+
+                // Eredmény dobozok kirajzolása (P2)
+                let p2HTML = '';
+                if (m.p2_s1 !== undefined && m.p2_s1 !== '') {
+                    p2HTML += `<div class="score-box ${getColorClass(p2_s1, p1_s1)}">${m.p2_s1}</div>`;
+                }
+                if (p1_sv1 > 0 || p2_sv1 > 0) {
+                    p2HTML += `<div class="score-box ${getColorClass(p2_sv1, p1_sv1)}">${m.p2_sv1 || 0}</div>`;
+                }
+                if (m.p2_s2 !== undefined && m.p2_s2 !== '') {
+                    p2HTML += `<div class="score-box ${getColorClass(p2_s2, p1_s2)}">${m.p2_s2}</div>`;
+                }
+                if (p1_sv2 > 0 || p2_sv2 > 0) {
+                    p2HTML += `<div class="score-box ${getColorClass(p2_sv2, p1_sv2)}">${m.p2_sv2 || 0}</div>`;
+                }
+                if (p1_sp > 0 || p2_sp > 0) {
+                    p2HTML += `<div class="score-box sp">${p2_sp}</div>`;
+                }
+                if (p1_msv > 0 || p2_msv > 0) {
+                    p2HTML += `<div class="score-box ${getColorClass(p2_msv, p1_msv)}">${m.p2_msv || 0}</div>`;
+                }
+                document.getElementById(`p2_scores_${mId}`).innerHTML = p2HTML;
+            }
+        });
     </script>
 </body>
 </html>
