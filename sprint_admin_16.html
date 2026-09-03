@@ -86,7 +86,7 @@
 <body>
 
     <div class="header">
-        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő (WNBA-NBC Stílus)" onchange="saveTitle()">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" oninput="saveTitle()">
     </div>
 
     <div class="tabs">
@@ -159,32 +159,31 @@
 
                     const laneInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
                     const timeInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
-                    const timeOnChange = rIdx === 0 ? '' : `onchange="saveMatch('${mId}')"`;
 
                     const cardHtml = `
                         <div class="match-card">
                             <div class="match-header">
                                 <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} onchange="saveMatch('${mId}')">
-                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${timeOnChange} ${isReadonlyMeta}>
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} oninput="saveMatch('${mId}')">
+                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${isReadonlyMeta} oninput="saveMatch('${mId}')">
                                 </div>
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveMatch('${mId}')">
-                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
-                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
-                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveMatch('${mId}')">
+                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} oninput="saveMatch('${mId}')">
+                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="handleScoreChange(this, '${mId}')">
+                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled oninput="saveMatch('${mId}')">
+                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="handleScoreChange(this, '${mId}')">
+                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled oninput="saveMatch('${mId}')">
+                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled oninput="saveMatch('${mId}')">
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveMatch('${mId}')">
-                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
-                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
-                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveMatch('${mId}')">
+                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} oninput="saveMatch('${mId}')">
+                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="handleScoreChange(this, '${mId}')">
+                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled oninput="saveMatch('${mId}')">
+                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="handleScoreChange(this, '${mId}')">
+                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled oninput="saveMatch('${mId}')">
+                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled oninput="saveMatch('${mId}')">
                             </div>
                         </div>
                     `;
@@ -388,6 +387,7 @@
 
                     fields.forEach(f => {
                         const el = document.getElementById(`${f}_${mId}`);
+                        // Csak akkor frissítse a Firebase-ből a mezőt, ha NINCSEEN épp benne a kurzor!
                         if (el && document.activeElement !== el) {
                             el.value = m[f] !== undefined ? m[f] : '';
                         }
