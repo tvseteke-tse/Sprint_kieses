@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna Kijelző - 16 Fő</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card-bg: #1e293b;
+            --card-border: #334155;
+            --accent: #38bdf8;
+            --gold: #f59e0b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --winner-bg: rgba(16, 185, 129, 0.2);
+            --winner-border: #10b981;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; overflow-x: auto; }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--card-border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        h1 { color: var(--accent); font-size: 2rem; text-transform: uppercase; letter-spacing: 2px; }
+
+        .bracket-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            min-width: 1200px;
+            margin: 0 auto;
+            flex-grow: 1;
+        }
+
+        .round {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            flex: 1;
+        }
+
+        .round-title {
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        .match {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            margin: 10px 0;
+            padding: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .match-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .player {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            margin: 3px 0;
+            background: #0f172a;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+
+        .player.winner {
+            background: var(--winner-bg);
+            border-color: var(--winner-border);
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        .scores {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .score-box {
+            width: 28px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background: #1e293b;
+            border-radius: 3px;
+            color: var(--text-muted);
+        }
+
+        .score-box.set-won { color: #fff; background: #3b82f6; }
+        .score-box.sv { border: 1px solid var(--gold); color: var(--gold); }
+        .score-box.msv { background: var(--gold); color: #000; }
+        .total-sets { font-size: 1.1rem; font-weight: 800; color: var(--accent); margin-left: 4px; width: 20px; text-align: center; }
+
+        /* Kötővonalak OBS ágrajz látványért */
+        .round-0 .match::after { content: ''; position: absolute; right: -10px; top: 50%; width: 10px; height: 2px; background: var(--card-border); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1 id="tournament_title">16 Fős Sprint Torna</h1>
+    </header>
+
+    <div class="bracket-container">
+        <!-- Nyolcaddöntő -->
+        <div class="round round-0">
+            <div class="round-title">Nyolcaddöntő</div>
+            <div id="m_1" class="match"></div>
+            <div id="m_2" class="match"></div>
+            <div id="m_3" class="match"></div>
+            <div id="m_4" class="match"></div>
+            <div id="m_5" class="match"></div>
+            <div id="m_6" class="match"></div>
+            <div id="m_7" class="match"></div>
+            <div id="m_8" class="match"></div>
+        </div>
+
+        <!-- Negyeddöntő -->
+        <div class="round round-1">
+            <div class="round-title">Negyeddöntő</div>
+            <div id="m_10" class="match"></div>
+            <div id="m_9" class="match"></div>
+            <div id="m_12" class="match"></div>
+            <div id="m_11" class="match"></div>
+        </div>
+
+        <!-- Elődöntő -->
+        <div class="round round-2">
+            <div class="round-title">Elődöntő</div>
+            <div id="m_14" class="match"></div>
+            <div id="m_13" class="match"></div>
+        </div>
+
+        <!-- Döntő -->
+        <div class="round round-3">
+            <div class="round-title">Döntő</div>
+            <div id="m_15" class="match"></div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function renderMatch(mId, data) {
+            const container = document.getElementById(mId);
+            if (!container) return;
+
+            const m = data || {};
+            const p1 = m.p1_name || '-';
+            const p2 = m.p2_name || '-';
+
+            const parseVal = (v) => (v !== undefined && v !== '') ? parseInt(v, 10) : null;
+
+            const s1_1 = parseVal(m.p1_s1), s1_2 = parseVal(m.p2_s1);
+            const s2_1 = parseVal(m.p1_s2), s2_2 = parseVal(m.p2_s2);
+            const sv1_1 = parseVal(m.p1_sv1), sv1_2 = parseVal(m.p2_sv1);
+            const sv2_1 = parseVal(m.p1_sv2), sv2_2 = parseVal(m.p2_sv2);
+            const msv1 = parseVal(m.p1_msv), msv2 = parseVal(m.p2_msv);
+
+            // Szett-győzelmek számítása
+            let sets1 = 0, sets2 = 0;
+
+            if (s1_1 !== null && s1_2 !== null) {
+                if (s1_1 > s1_2) sets1++;
+                else if (s1_2 > s1_1) sets2++;
+                else if (sv1_1 !== null && sv1_2 !== null) {
+                    if (sv1_1 > sv1_2) sets1++;
+                    else if (sv1_2 > sv1_1) sets2++;
+                }
+            }
+
+            if (s2_1 !== null && s2_2 !== null) {
+                if (s2_1 > s2_2) sets1++;
+                else if (s2_2 > s2_1) sets2++;
+                else if (sv2_1 !== null && sv2_2 !== null) {
+                    if (sv2_1 > sv2_2) sets1++;
+                    else if (sv2_2 > sv2_1) sets2++;
+                }
+            }
+
+            if (sets1 === 1 && sets2 === 1 && msv1 !== null && msv2 !== null) {
+                if (msv1 > msv2) sets1++;
+                else if (msv2 > msv1) sets2++;
+            }
+
+            const isP1Winner = sets1 > sets2;
+            const isP2Winner = sets2 > sets1;
+
+            container.innerHTML = `
+                <div class="match-info">
+                    <span>Meccs #${mId.replace('m_','')}</span>
+                    <span>${m.lanes ? 'Pálya: ' + m.lanes : ''} ${m.time ? '| ' + m.time : ''}</span>
+                </div>
+                <div class="player ${isP1Winner ? 'winner' : ''}">
+                    <span class="player-name">${p1}</span>
+                    <div class="scores">
+                        <div class="score-box ${s1_1 !== null && s1_1 >= s1_2 ? 'set-won' : ''}">${s1_1 !== null ? s1_1 : ''}</div>
+                        ${sv1_1 !== null ? `<div class="score-box sv">${sv1_1}</div>` : ''}
+                        <div class="score-box ${s2_1 !== null && s2_1 >= s2_2 ? 'set-won' : ''}">${s2_1 !== null ? s2_1 : ''}</div>
+                        ${sv2_1 !== null ? `<div class="score-box sv">${sv2_1}</div>` : ''}
+                        ${msv1 !== null ? `<div class="score-box msv">${msv1}</div>` : ''}
+                        <div class="total-sets">${sets1}</div>
+                    </div>
+                </div>
+                <div class="player ${isP2Winner ? 'winner' : ''}">
+                    <span class="player-name">${p2}</span>
+                    <div class="scores">
+                        <div class="score-box ${s1_2 !== null && s1_2 >= s1_1 ? 'set-won' : ''}">${s1_2 !== null ? s1_2 : ''}</div>
+                        ${sv1_2 !== null ? `<div class="score-box sv">${sv1_2}</div>` : ''}
+                        <div class="score-box ${s2_2 !== null && s2_2 >= s2_1 ? 'set-won' : ''}">${s2_2 !== null ? s2_2 : ''}</div>
+                        ${sv2_2 !== null ? `<div class="score-box sv">${sv2_2}</div>` : ''}
+                        ${msv2 !== null ? `<div class="score-box msv">${msv2}</div>` : ''}
+                        <div class="total-sets">${sets2}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Firebase Élő Adatkapcsolat
+        db.ref('torna_16').on('value', snapshot => {
+            const data = snapshot.val() || {};
+
+            // Cím frissítése
+            if (data.title) {
+                document.getElementById('tournament_title').textContent = data.title;
+            }
+
+            // 1-15 meccsek kirajzolása
+            for (let i = 1; i <= 15; i++) {
+                const mId = `m_${i}`;
+                renderMatch(mId, data[mId]);
+            }
+        });
+    </script>
+</body>
+</html>
