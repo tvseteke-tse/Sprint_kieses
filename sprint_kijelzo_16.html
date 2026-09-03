@@ -49,7 +49,7 @@
 
         .round-column {
             flex: 1;
-            min-width: 260px;
+            min-width: 280px;
             display: flex;
             flex-direction: column;
             justify-content: space-around;
@@ -83,6 +83,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
+            padding-bottom: 4px;
         }
 
         .match-meta {
@@ -94,6 +95,31 @@
             justify-content: space-between;
             font-weight: bold;
             border-bottom: 1px solid var(--border);
+        }
+
+        /* Fejléc címkék stílusa */
+        .match-labels {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            padding: 4px 10px 2px 10px;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .label-item {
+            width: 28px;
+            text-align: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            color: #64748b;
+        }
+
+        .label-item.sv {
+            color: var(--gold);
+        }
+
+        .label-item.sp {
+            color: var(--accent);
         }
 
         .player-row {
@@ -118,6 +144,7 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            padding-right: 6px;
         }
 
         .player-row.winner .player-name {
@@ -163,7 +190,6 @@
             background: var(--accent);
             color: #0f172a !important;
             font-size: 0.85rem;
-            margin-left: 4px;
             border: none !important;
         }
     </style>
@@ -229,6 +255,14 @@
                             <div class="match-meta">
                                 <span>Meccs #${mNum}</span>
                                 <span id="meta_m_${mNum}">-</span>
+                            </div>
+                            <div class="match-labels">
+                                <span class="label-item">1.sz</span>
+                                <span class="label-item sv">SV1</span>
+                                <span class="label-item">2.sz</span>
+                                <span class="label-item sv">SV2</span>
+                                <span class="label-item sp">SP</span>
+                                <span class="label-item sv">MSV</span>
                             </div>
                             <div class="player-row" id="p1_row_m_${mNum}">
                                 <div class="player-name" id="p1_name_m_${mNum}">-</div>
@@ -327,46 +361,22 @@
 
                 // Eredmény dobozok kirajzolása (P1)
                 let p1HTML = '';
-                if (m.p1_s1 !== undefined && m.p1_s1 !== '') {
-                    p1HTML += `<div class="score-box ${getColorClass(p1_s1, p2_s1)}">${m.p1_s1}</div>`;
-                }
-                if (p1_sv1 > 0 || p2_sv1 > 0) {
-                    p1HTML += `<div class="score-box ${getColorClass(p1_sv1, p2_sv1)}">${m.p1_sv1 || 0}</div>`;
-                }
-                if (m.p1_s2 !== undefined && m.p1_s2 !== '') {
-                    p1HTML += `<div class="score-box ${getColorClass(p1_s2, p2_s2)}">${m.p1_s2}</div>`;
-                }
-                if (p1_sv2 > 0 || p2_sv2 > 0) {
-                    p1HTML += `<div class="score-box ${getColorClass(p1_sv2, p2_sv2)}">${m.p1_sv2 || 0}</div>`;
-                }
-                if (p1_sp > 0 || p2_sp > 0) {
-                    p1HTML += `<div class="score-box sp">${p1_sp}</div>`;
-                }
-                if (p1_msv > 0 || p2_msv > 0) {
-                    p1HTML += `<div class="score-box ${getColorClass(p1_msv, p2_msv)}">${m.p1_msv || 0}</div>`;
-                }
+                p1HTML += `<div class="score-box ${getColorClass(p1_s1, p2_s1)}">${m.p1_s1 !== undefined && m.p1_s1 !== '' ? m.p1_s1 : '-'}</div>`;
+                p1HTML += `<div class="score-box ${getColorClass(p1_sv1, p2_sv1)}">${m.p1_sv1 !== undefined && m.p1_sv1 !== '' ? m.p1_sv1 : '-'}</div>`;
+                p1HTML += `<div class="score-box ${getColorClass(p1_s2, p2_s2)}">${m.p1_s2 !== undefined && m.p1_s2 !== '' ? m.p1_s2 : '-'}</div>`;
+                p1HTML += `<div class="score-box ${getColorClass(p1_sv2, p2_sv2)}">${m.p1_sv2 !== undefined && m.p1_sv2 !== '' ? m.p1_sv2 : '-'}</div>`;
+                p1HTML += `<div class="score-box sp">${p1_sp}</div>`;
+                p1HTML += `<div class="score-box ${getColorClass(p1_msv, p2_msv)}">${m.p1_msv !== undefined && m.p1_msv !== '' ? m.p1_msv : '-'}</div>`;
                 document.getElementById(`p1_scores_${mId}`).innerHTML = p1HTML;
 
                 // Eredmény dobozok kirajzolása (P2)
                 let p2HTML = '';
-                if (m.p2_s1 !== undefined && m.p2_s1 !== '') {
-                    p2HTML += `<div class="score-box ${getColorClass(p2_s1, p1_s1)}">${m.p2_s1}</div>`;
-                }
-                if (p1_sv1 > 0 || p2_sv1 > 0) {
-                    p2HTML += `<div class="score-box ${getColorClass(p2_sv1, p1_sv1)}">${m.p2_sv1 || 0}</div>`;
-                }
-                if (m.p2_s2 !== undefined && m.p2_s2 !== '') {
-                    p2HTML += `<div class="score-box ${getColorClass(p2_s2, p1_s2)}">${m.p2_s2}</div>`;
-                }
-                if (p1_sv2 > 0 || p2_sv2 > 0) {
-                    p2HTML += `<div class="score-box ${getColorClass(p2_sv2, p1_sv2)}">${m.p2_sv2 || 0}</div>`;
-                }
-                if (p1_sp > 0 || p2_sp > 0) {
-                    p2HTML += `<div class="score-box sp">${p2_sp}</div>`;
-                }
-                if (p1_msv > 0 || p2_msv > 0) {
-                    p2HTML += `<div class="score-box ${getColorClass(p2_msv, p1_msv)}">${m.p2_msv || 0}</div>`;
-                }
+                p2HTML += `<div class="score-box ${getColorClass(p2_s1, p1_s1)}">${m.p2_s1 !== undefined && m.p2_s1 !== '' ? m.p2_s1 : '-'}</div>`;
+                p2HTML += `<div class="score-box ${getColorClass(p2_sv1, p1_sv1)}">${m.p2_sv1 !== undefined && m.p2_sv1 !== '' ? m.p2_sv1 : '-'}</div>`;
+                p2HTML += `<div class="score-box ${getColorClass(p2_s2, p1_s2)}">${m.p2_s2 !== undefined && m.p2_s2 !== '' ? m.p2_s2 : '-'}</div>`;
+                p2HTML += `<div class="score-box ${getColorClass(p2_sv2, p1_sv2)}">${m.p2_sv2 !== undefined && m.p2_sv2 !== '' ? m.p2_sv2 : '-'}</div>`;
+                p2HTML += `<div class="score-box sp">${p2_sp}</div>`;
+                p2HTML += `<div class="score-box ${getColorClass(p2_msv, p1_msv)}">${m.p2_msv !== undefined && m.p2_msv !== '' ? m.p2_msv : '-'}</div>`;
                 document.getElementById(`p2_scores_${mId}`).innerHTML = p2HTML;
             }
         });
