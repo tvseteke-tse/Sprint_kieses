@@ -22,18 +22,15 @@
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); }
         .header h2 { color: var(--accent); font-size: 1.4rem; }
 
-        /* Fülek */
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
         .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
         .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
 
         .content-area { flex-grow: 1; }
 
-        /* Fordulók nézetei */
         .round-pane { display: none; }
         .round-pane.active { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
 
-        /* Meccskártya */
         .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .match-header { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 4px; }
         
@@ -50,7 +47,6 @@
             display: inline-block !important;
         }
 
-        /* Fixált pályamező stílusa */
         .input-readonly {
             background: #1e293b !important;
             color: #94a3b8 !important;
@@ -70,7 +66,6 @@
         <h2>Sprint Torna Admin - 16 Fő (WNBA-NBC Stílus)</h2>
     </div>
 
-    <!-- Fülek -->
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab(0)">1/8 Döntő</button>
         <button class="tab-btn" onclick="switchTab(1)">Negyeddöntő</button>
@@ -78,7 +73,6 @@
         <button class="tab-btn" onclick="switchTab(3)">Döntő</button>
     </div>
 
-    <!-- Konténer -->
     <div class="content-area" id="panes-container"></div>
 
     <script>
@@ -90,12 +84,42 @@
             panes.forEach((pane, i) => pane.classList.toggle('active', i === idx));
         }
 
+        // A képed szerinti pontos továbbjutási és pálya térkép
+        // Forrás matchNum (1-14) -> Cél matchNum (9-15) + Melyik játékos helyre kerül (p1 / p2)
+        const progressionMap = {
+            1:  { targetMatch: 10, targetPos: 'p1' }, // 1. Gy -> 10. meccs P1
+            2:  { targetMatch: 9,  targetPos: 'p1' }, // 2. Gy -> 9. meccs P1
+            3:  { targetMatch: 10, targetPos: 'p2' }, // 3. Gy -> 10. meccs P2
+            4:  { targetMatch: 9,  targetPos: 'p2' }, // 4. Gy -> 9. meccs P2
+            5:  { targetMatch: 12, targetPos: 'p1' }, // 5. Gy -> 12. meccs P1
+            6:  { targetMatch: 11, targetPos: 'p1' }, // 6. Gy -> 11. meccs P1
+            7:  { targetMatch: 12, targetPos: 'p2' }, // 7. Gy -> 12. meccs P2
+            8:  { targetMatch: 11, targetPos: 'p2' }, // 8. Gy -> 11. meccs P2
+            9:  { targetMatch: 14, targetPos: 'p1' }, // 9. Gy -> 14. meccs P1
+            10: { targetMatch: 13, targetPos: 'p1' }, // 10. Gy -> 13. meccs P1
+            11: { targetMatch: 14, targetPos: 'p2' }, // 11. Gy -> 14. meccs P2
+            12: { targetMatch: 13, targetPos: 'p2' }, // 12. Gy -> 13. meccs P2
+            13: { targetMatch: 15, targetPos: 'p2' }, // 13. Gy -> 15. meccs P2
+            14: { targetMatch: 15, targetPos: 'p1' }  // 14. Gy -> 15. meccs P1
+        };
+
+        // Alapértelmezett pályák a táblázat alapján
+        const defaultLanes = {
+            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
+            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4',
+            13: '1-2', 14: '3-4',
+            15: '1-2'
+        };
+
+        const r0Times = ['09:00', '09:00', '09:50', '09:50', '10:40', '10:40', '11:30', '11:30'];
+
         function renderBracket() {
             const container = document.getElementById('panes-container');
             container.innerHTML = '';
             
             const rounds = ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
             let matchCount = 8;
+            let matchNum = 1;
 
             rounds.forEach((rName, rIdx) => {
                 const paneDiv = document.createElement('div');
@@ -103,19 +127,24 @@
                 paneDiv.id = `pane_${rIdx}`;
 
                 for (let i = 0; i < matchCount; i++) {
-                    const mId = `r${rIdx}_m${i}`;
-                    let defaultLane = '';
-                    if (rIdx === 0) {
-                        defaultLane = (i % 2 === 0) ? '1-2' : '3-4';
-                    }
+                    const currentMatchNum = matchNum;
+                    const mId = `m_${currentMatchNum}`;
+                    
+                    let laneVal = defaultLanes[currentMatchNum] || '';
+                    let timeVal = rIdx === 0 ? r0Times[i] : '';
+                    let isReadonly = rIdx === 0 ? 'readonly tabindex="-1"' : '';
+
+                    const laneInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
+                    const timeInputClass = rIdx === 0 ? 'admin-input input-meta input-readonly' : 'admin-input input-meta';
+                    const timeOnChange = rIdx === 0 ? '' : `onchange="saveMatch('${mId}')"`;
 
                     const cardHtml = `
                         <div class="match-card">
                             <div class="match-header">
-                                <span>Meccs #${i + 1}</span>
+                                <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="admin-input input-meta input-readonly" value="${defaultLane}" placeholder="1-2" readonly tabindex="-1">
-                                    Idő: <input type="text" id="time_${mId}" class="admin-input input-meta" placeholder="12:00" onchange="saveMatch('${mId}')">
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonly}>
+                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${timeOnChange} ${isReadonly}>
                                 </div>
                             </div>
                             <div class="p-row">
@@ -137,6 +166,7 @@
                         </div>
                     `;
                     paneDiv.innerHTML += cardHtml;
+                    matchNum++;
                 }
                 container.appendChild(paneDiv);
                 matchCount /= 2;
@@ -206,13 +236,13 @@
 
             if (winner) {
                 const wName = winner === 1 ? d.p1_name : d.p2_name;
-                const parts = mId.split('_');
-                const r = parseInt(parts[0].replace('r','')), m = parseInt(parts[1].replace('m',''));
-                const nextId = `r${r+1}_m${Math.floor(m/2)}`;
-                const isP1 = (m % 2 === 0);
-                
-                if (wName && document.getElementById(`p1_name_${nextId}`)) {
-                    db.ref(`torna_16/${nextId}`).child(isP1 ? 'p1_name' : 'p2_name').set(wName);
+                const matchNum = parseInt(mId.replace('m_', ''));
+                const nextStep = progressionMap[matchNum];
+
+                if (nextStep && wName) {
+                    const targetId = `m_${nextStep.targetMatch}`;
+                    const targetField = `${nextStep.targetPos}_name`;
+                    db.ref(`torna_16/${targetId}`).child(targetField).set(wName);
                 }
             }
         }
@@ -223,7 +253,13 @@
                 const data = snap.val() || {};
                 Object.keys(data).forEach(mId => {
                     const m = data[mId];
-                    ['time','p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv'].forEach(f => {
+                    const matchNum = parseInt(mId.replace('m_', ''));
+                    
+                    const fields = matchNum <= 8 
+                        ? ['p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv']
+                        : ['time','lanes','p1_name','p2_name','p1_s1','p2_s1','p1_sv1','p2_sv1','p1_s2','p2_s2','p1_sv2','p2_sv2','p1_msv','p2_msv'];
+
+                    fields.forEach(f => {
                         const el = document.getElementById(`${f}_${mId}`);
                         if (el && document.activeElement !== el) {
                             if (m[f] !== undefined) {
