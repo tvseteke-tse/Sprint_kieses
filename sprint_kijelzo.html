@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna - Kijelző</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg: #060913;
+            --panel: #111827;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --border: #1e293b;
+            --winner: #15803d;
+            --gold: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; overflow: hidden; }
+
+        .title-bar { text-align: center; font-size: 2rem; font-weight: 900; color: var(--accent); margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase; }
+
+        .bracket { display: flex; gap: 20px; height: calc(100vh - 100px); justify-content: space-between; }
+        .round { flex: 1; display: flex; flex-direction: column; justify-content: space-around; }
+        .round-title { text-align: center; color: var(--accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 10px; text-transform: uppercase; }
+
+        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .p-row { display: flex; justify-content: space-between; align-items: center; background: #0b0f19; padding: 8px 12px; margin: 4px 0; border-radius: 6px; border-left: 4px solid transparent; font-size: 1.1rem; font-weight: bold; }
+        .p-row.winner { border-left-color: #22c55e; background: #064e3b; }
+        
+        .p-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .p-sets { background: var(--gold); color: black; font-size: 1.1rem; padding: 2px 8px; border-radius: 4px; font-weight: 900; }
+    </style>
+</head>
+<body>
+
+    <div class="title-bar">Sprint Egyéni Bajnokság</div>
+    <div class="bracket" id="bracket"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        let currentSize = 16;
+
+        function renderBracket() {
+            const container = document.getElementById('bracket');
+            container.innerHTML = '';
+            
+            const rounds = currentSize === 32 ? 
+                ['1/16 Döntő', '1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'] : 
+                ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
+                
+            let matchCount = currentSize / 2;
+
+            rounds.forEach((rName, rIdx) => {
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'round';
+                roundDiv.innerHTML = `<div class="round-title">${rName}</div>`;
+
+                for (let i = 0; i < matchCount; i++) {
+                    const mId = `r${rIdx}_m${i}`;
+                    const card = document.createElement('div');
+                    card.className = 'match-card';
+                    card.innerHTML = `
+                        <div class="p-row" id="p1_row_${mId}">
+                            <span class="p-name" id="p1_name_${mId}">-</span>
+                            <span class="p-sets" id="p1_sets_${mId}">0</span>
+                        </div>
+                        <div class="p-row" id="p2_row_${mId}">
+                            <span class="p-name" id="p2_name_${mId}">-</span>
+                            <span class="p-sets" id="p2_sets_${mId}">0</span>
+                        </div>
+                    `;
+                    roundDiv.appendChild(card);
+                }
+                container.appendChild(roundDiv);
+                matchCount /= 2;
+            });
+        }
+
+        function calcMatch(d) {
+            let p1_s = 0, p2_s = 0;
+            if (d.p1_s1 > d.p2_s1) p1_s++; else if (d.p2_s1 > d.p1_s1) p2_s++;
+            else if (d.p1_sv1 > d.p2_sv1) p1_s++; else if (d.p2_sv1 > d.p1_sv1) p2_s++;
+
+            if (d.p1_s2 > d.p2_s2) p1_s++; else if (d.p2_s2 > d.p1_s2) p2_s++;
+            else if (d.p1_sv2 > d.p2_sv2) p1_s++; else if (d.p2_sv2 > d.p1_sv2) p2_s++;
+
+            let winner = null;
+            if (p1_s > p2_s) winner = 1;
+            else if (p2_s > p1_s) winner = 2;
+            else if (p1_s === 1 && p2_s === 1) {
+                if (d.p1_msv > d.p2_msv) winner = 1;
+                else if (d.p2_msv > d.p1_msv) winner = 2;
+            }
+
+            return { p1_s, p2_s, winner };
+        }
+
+        function listenData() {
+            db.ref(`torna_${currentSize}`).on('value', snap => {
+                const data = snap.val() || {};
+                Object.keys(data).forEach(mId => {
+                    const m = data[mId];
+                    const res = calcMatch(m);
+
+                    const p1Name = document.getElementById(`p1_name_${mId}`);
+                    const p2Name = document.getElementById(`p2_name_${mId}`);
+                    if (p1Name) p1Name.innerText = m.p1_name || '-';
+                    if (p2Name) p2Name.innerText = m.p2_name || '-';
+
+                    const p1Sets = document.getElementById(`p1_sets_${mId}`);
+                    const p2Sets = document.getElementById(`p2_sets_${mId}`);
+                    if (p1Sets) p1Sets.innerText = res.p1_s;
+                    if (p2Sets) p2Sets.innerText = res.p2_s;
+
+                    const r1 = document.getElementById(`p1_row_${mId}`);
+                    const r2 = document.getElementById(`p2_row_${mId}`);
+                    if (r1) r1.classList.toggle('winner', res.winner === 1);
+                    if (r2) r2.classList.toggle('winner', res.winner === 2);
+                });
+            });
+        }
+
+        db.ref('config/size').on('value', snap => {
+            currentSize = snap.val() || 16;
+            renderBracket();
+            listenData();
+        });
+    </script>
+</body>
+</html>
