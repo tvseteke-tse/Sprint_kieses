@@ -42,8 +42,8 @@
     <div class="header">
         <h2>Sprint Torna Admin</h2>
         <div class="size-btns">
-            <button id="b16" onclick="userSelectSize(16)">16-os Tábla</button>
-            <button id="b32" onclick="userSelectSize(32)">32-es Tábla</button>
+            <button id="b16" class="active" onclick="changeSize(16)">16-os Tábla</button>
+            <button id="b32" onclick="changeSize(32)">32-es Tábla</button>
         </div>
     </div>
 
@@ -61,20 +61,21 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentSize = null;
+        let currentSize = 16;
         let activeRef = null;
 
-        function userSelectSize(size) {
-            db.ref('config/size').set(size);
-        }
-
-        function setSize(size) {
-            if (currentSize === size) return;
+        // Gombnyomásra lefutó méretváltó függvény
+        function changeSize(size) {
             currentSize = size;
-
+            
+            // Gombok vizuális frissítése
             document.getElementById('b16').classList.toggle('active', size === 16);
             document.getElementById('b32').classList.toggle('active', size === 32);
 
+            // Adatbázis frissítése a kijelző felé
+            db.ref('config/size').set(size);
+
+            // Ágrajz újrarajzolása és adatfigyelés átállítása
             renderBracket();
             listenData();
         }
@@ -179,7 +180,7 @@
 
         function listenData() {
             if (activeRef) {
-                activeRef.off(); // Leiratkozás az előző méret adatbázis-eseményeiről
+                activeRef.off(); // Előző figyelő eltávolítása
             }
 
             activeRef = db.ref(`torna_${currentSize}`);
@@ -195,11 +196,8 @@
             });
         }
 
-        // Adatbázisból figyelem, hogy a Kijelző/Admin szinkronban legyen
-        db.ref('config/size').on('value', snap => {
-            const size = snap.val() || 16;
-            setSize(size);
-        });
+        // Kezdő inicializálás: beállítjuk a 16-os alapértelmezett méretet egyszer
+        changeSize(16);
     </script>
 </body>
 </html>
