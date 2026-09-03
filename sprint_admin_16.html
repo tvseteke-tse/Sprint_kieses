@@ -86,7 +86,7 @@
 <body>
 
     <div class="header">
-        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" oninput="saveTitleDebounced()">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" onchange="saveTitle()">
     </div>
 
     <div class="tabs">
@@ -99,8 +99,6 @@
     <div class="content-area" id="panes-container"></div>
 
     <script>
-        let saveTimeouts = {};
-
         function switchTab(idx) {
             const btns = document.querySelectorAll('.tab-btn');
             const panes = document.querySelectorAll('.round-pane');
@@ -167,25 +165,25 @@
                             <div class="match-header">
                                 <span>Meccs #${currentMatchNum}</span>
                                 <div>
-                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} oninput="queueSave('${mId}', 'lanes', this.value)">
-                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${isReadonlyMeta} oninput="queueSave('${mId}', 'time', this.value)">
+                                    Pálya: <input type="text" id="lanes_${mId}" class="${laneInputClass}" value="${laneVal}" placeholder="1-2" ${isReadonlyMeta} onchange="saveField('${mId}', 'lanes', this.value)">
+                                    Idő: <input type="text" id="time_${mId}" class="${timeInputClass}" value="${timeVal}" placeholder="12:00" ${isReadonlyMeta} onchange="saveField('${mId}', 'time', this.value)">
                                 </div>
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} oninput="queueSave('${mId}', 'p1_name', this.value)">
-                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="handleScoreInput(this, '${mId}', 'p1_s1')">
-                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled oninput="queueSave('${mId}', 'p1_sv1', this.value)">
-                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="handleScoreInput(this, '${mId}', 'p1_s2')">
-                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled oninput="queueSave('${mId}', 'p1_sv2', this.value)">
-                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled oninput="queueSave('${mId}', 'p1_msv', this.value)">
+                                <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveField('${mId}', 'p1_name', this.value)">
+                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s1')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv1', this.value)">
+                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p1_s2')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p1_sv2', this.value)">
+                                <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p1_msv', this.value)">
                             </div>
                             <div class="p-row">
-                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} oninput="queueSave('${mId}', 'p2_name', this.value)">
-                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="handleScoreInput(this, '${mId}', 'p2_s1')">
-                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled oninput="queueSave('${mId}', 'p2_sv1', this.value)">
-                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="handleScoreInput(this, '${mId}', 'p2_s2')">
-                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled oninput="queueSave('${mId}', 'p2_sv2', this.value)">
-                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled oninput="queueSave('${mId}', 'p2_msv', this.value)">
+                                <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveField('${mId}', 'p2_name', this.value)">
+                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s1')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv1', this.value)">
+                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}', 'p2_s2')" oninput="updateSvStates('${mId}')">
+                                <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveField('${mId}', 'p2_sv2', this.value)">
+                                <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveField('${mId}', 'p2_msv', this.value)">
                             </div>
                         </div>
                     `;
@@ -199,26 +197,17 @@
 
         renderBracket();
 
-        function handleScoreInput(inputEl, mId, fieldName) {
+        function handleScoreChange(inputEl, mId, fieldName) {
             if (!inputEl) return;
             const val = parseInt(inputEl.value);
             if (val > 180) {
                 alert("Hiba: A szett eredménye nem lehet több 180 fánál!");
                 inputEl.value = "";
-                queueSave(mId, fieldName, '');
+                saveField(mId, fieldName, '');
                 return;
             }
-            queueSave(mId, fieldName, inputEl.value);
+            saveField(mId, fieldName, inputEl.value);
             updateSvStates(mId);
-        }
-
-        function queueSave(mId, fieldName, value) {
-            const key = `${mId}_${fieldName}`;
-            if (saveTimeouts[key]) clearTimeout(saveTimeouts[key]);
-
-            saveTimeouts[key] = setTimeout(() => {
-                saveField(mId, fieldName, value);
-            }, 300); // 300ms szünet gépelés után
         }
 
         function updateSvStates(mId) {
@@ -288,18 +277,15 @@
         try {
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
-            listenData();
+            loadInitialData();
         } catch(e) {
             console.error("Firebase hiba:", e);
         }
 
-        function saveTitleDebounced() {
-            if (saveTimeouts['admin_title']) clearTimeout(saveTimeouts['admin_title']);
-            saveTimeouts['admin_title'] = setTimeout(() => {
-                if (!db) return;
-                const titleVal = document.getElementById('admin_title')?.value || '';
-                db.ref('torna_16/title').set(titleVal);
-            }, 500);
+        function saveTitle() {
+            if (!db) return;
+            const titleVal = document.getElementById('admin_title')?.value || '';
+            db.ref('torna_16/title').set(titleVal);
         }
 
         function saveField(mId, fieldName, value) {
@@ -360,21 +346,24 @@
                         const targetId = `m_${nextStep.targetMatch}`;
                         const targetField = `${nextStep.targetPos}_name`;
                         db.ref(`torna_16/${targetId}/${targetField}`).set(wName);
+                        
+                        // Frissítjük a célmezőt az előlapon is
+                        const targetEl = document.getElementById(`${targetField}_${targetId}`);
+                        if (targetEl) targetEl.value = wName;
                     }
                 }
             });
         }
 
-        function listenData() {
+        // Adatok egyszeri betöltése megnyitáskor/frissítéskor (.once helyett nem fut folyamatosan a háttérben)
+        function loadInitialData() {
             if (!db) return;
-            db.ref('torna_16').on('value', snap => {
+            db.ref('torna_16').once('value', snap => {
                 const data = snap.val() || {};
                 
                 if (data.title !== undefined) {
                     const titleEl = document.getElementById('admin_title');
-                    if (titleEl && document.activeElement !== titleEl) {
-                        titleEl.value = data.title;
-                    }
+                    if (titleEl) titleEl.value = data.title;
                 }
 
                 for (let i = 1; i <= 15; i++) {
@@ -385,9 +374,8 @@
 
                     fields.forEach(f => {
                         const el = document.getElementById(`${f}_${mId}`);
-                        // Csak akkor állítunk be értéket, ha a felhasználó NEM épp abban a mezőben áll!
-                        if (el && document.activeElement !== el) {
-                            el.value = m[f] !== undefined ? m[f] : '';
+                        if (el && m[f] !== undefined) {
+                            el.value = m[f];
                         }
                     });
 
