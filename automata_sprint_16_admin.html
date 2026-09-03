@@ -17,6 +17,8 @@
             --danger: #ef4444;
             --danger-hover: #dc2626;
             --success: #10b981;
+            --load: #f59e0b;
+            --load-hover: #d97706;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -31,6 +33,8 @@
             background: var(--card-bg);
             border-radius: 10px;
             border: 1px solid var(--card-border);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         h1 { color: var(--accent); font-size: 1.5rem; }
@@ -38,6 +42,7 @@
         .header-actions {
             display: flex;
             gap: 10px;
+            flex-wrap: wrap;
         }
 
         button {
@@ -48,6 +53,9 @@
             cursor: pointer;
             transition: all 0.2s ease;
         }
+
+        .btn-load { background: var(--load); color: #000; }
+        .btn-load:hover { background: var(--load-hover); color: #fff; }
 
         .btn-save { background: var(--accent); color: #000; }
         .btn-save:hover { background: #0284c7; color: #fff; }
@@ -125,6 +133,10 @@
     <header>
         <h1>16 Fős Sprint Torna - Admin</h1>
         <div class="header-actions">
+            <!-- Rejtett fájlbeolvasó input -->
+            <input type="file" id="fileInput" accept=".json,.txt,.tke" style="display: none;" onchange="handleFileSelect(event)">
+            
+            <button type="button" class="btn-load" onclick="document.getElementById('fileInput').click()">📂 ADATOK BEOLVASÁSA</button>
             <button type="button" class="btn-save" onclick="saveAllMatches()">💾 MENTÉS FIREBASE-BE</button>
             <button type="button" class="btn-reset" onclick="resetTournamentData()">⚠️ ADATOK TÖRLÉSE</button>
         </div>
@@ -194,6 +206,35 @@
                 });
             }
         });
+
+        // Fájl beolvasása funkció (JSON / Szöveges strukturált adatokhoz)
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    // Adatok feltöltése a mezőkbe
+                    for (let i = 1; i <= 15; i++) {
+                        const m = importedData[`m_${i}`] || importedData[i] || {};
+                        const fields = ['lanes', 'time', 'p1_name', 'p1_s1', 'p1_sv1', 'p1_s2', 'p1_sv2', 'p1_msv', 'p2_name', 'p2_s1', 'p2_sv1', 'p2_s2', 'p2_sv2', 'p2_msv'];
+                        fields.forEach(f => {
+                            const el = document.getElementById(`m_${i}_${f}`);
+                            if (el && m[f] !== undefined) {
+                                el.value = m[f];
+                            }
+                        });
+                    }
+                    alert("Fájl sikeresen beolvasva! Ne felejtsd el elmenteni a Firebase-be.");
+                } catch (err) {
+                    alert("Hiba a fájl feldolgozása során! Győződj meg róla, hogy érvényes struktúrájú fájlt választottál.");
+                }
+            };
+            reader.readAsText(file);
+        }
 
         // Adatok mentése
         function saveAllMatches() {
