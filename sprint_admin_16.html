@@ -172,17 +172,17 @@
                             </div>
                             <div class="p-row">
                                 <input type="text" id="p1_name_${mId}" class="${nameInputClass}" placeholder="Játékos 1" ${isReadonlyName} onchange="saveMatch('${mId}')">
-                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="validateScore(this); updateSvStates('${mId}')" onchange="validateScore(this); saveMatch('${mId}')">
+                                <input type="number" id="p1_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
                                 <input type="number" id="p1_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="validateScore(this); updateSvStates('${mId}')" onchange="validateScore(this); saveMatch('${mId}')">
+                                <input type="number" id="p1_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
                                 <input type="number" id="p1_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveMatch('${mId}')">
                                 <input type="number" id="p1_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveMatch('${mId}')">
                             </div>
                             <div class="p-row">
                                 <input type="text" id="p2_name_${mId}" class="${nameInputClass}" placeholder="Játékos 2" ${isReadonlyName} onchange="saveMatch('${mId}')">
-                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" oninput="validateScore(this); updateSvStates('${mId}')" onchange="validateScore(this); saveMatch('${mId}')">
+                                <input type="number" id="p2_s1_${mId}" class="admin-input input-num" placeholder="Sz1" title="1. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
                                 <input type="number" id="p2_sv1_${mId}" class="admin-input input-sv input-disabled" placeholder="SV1" title="1. Szett SV" disabled onchange="saveMatch('${mId}')">
-                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" oninput="validateScore(this); updateSvStates('${mId}')" onchange="validateScore(this); saveMatch('${mId}')">
+                                <input type="number" id="p2_s2_${mId}" class="admin-input input-num" placeholder="Sz2" title="2. Szett Fa" max="180" onchange="handleScoreChange(this, '${mId}')">
                                 <input type="number" id="p2_sv2_${mId}" class="admin-input input-sv input-disabled" placeholder="SV2" title="2. Szett SV" disabled onchange="saveMatch('${mId}')">
                                 <input type="number" id="p2_msv_${mId}" class="admin-input input-sv input-disabled" placeholder="MSV" title="Meccs Sudden Victory" disabled onchange="saveMatch('${mId}')">
                             </div>
@@ -198,11 +198,16 @@
 
         renderBracket();
 
-        function validateScore(inputEl) {
-            if (inputEl && parseInt(inputEl.value) > 180) {
+        function handleScoreChange(inputEl, mId) {
+            if (!inputEl) return;
+            const val = parseInt(inputEl.value);
+            if (val > 180) {
                 alert("Hiba: A szett eredménye nem lehet több 180 fánál!");
                 inputEl.value = "";
+                return;
             }
+            updateSvStates(mId);
+            saveMatch(mId);
         }
 
         function updateSvStates(mId) {
@@ -368,7 +373,6 @@
             db.ref('torna_16').on('value', snap => {
                 const data = snap.val() || {};
                 
-                // Címsor betöltése
                 if (data.title !== undefined) {
                     const titleEl = document.getElementById('admin_title');
                     if (titleEl && document.activeElement !== titleEl) {
@@ -376,7 +380,6 @@
                     }
                 }
 
-                // Meccsek adatainak betöltése
                 for (let i = 1; i <= 15; i++) {
                     const mId = `m_${i}`;
                     const m = data[mId] || {};
