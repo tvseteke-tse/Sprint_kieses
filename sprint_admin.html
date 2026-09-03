@@ -20,14 +20,13 @@
         body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
 
         .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); flex-shrink: 0; }
-        .size-btns button { background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 5px; }
+        .size-btns button { background: #475569; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; margin-left: 5px; transition: 0.2s; }
         .size-btns button.active { background: var(--accent); color: #0f172a; }
 
-        /* Vízszintesen görgethető elrendezés átfedések nélkül */
-        .bracket { display: flex; gap: 25px; overflow-x: auto; overflow-y: auto; flex-grow: 1; padding-bottom: 15px; align-items: flex-start; }
+        .bracket { display: flex; gap: 25px; overflow-x: auto; overflow-y: auto; flex-grow: 1; padding-bottom: 15px; align-items: stretch; }
         
-        .round { min-width: 340px; width: 340px; display: flex; flex-direction: column; gap: 15px; flex-shrink: 0; }
-        .round-title { text-align: center; color: var(--accent); font-weight: bold; padding: 8px; background: var(--panel); border-radius: 6px; border: 1px solid var(--border); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; }
+        .round { min-width: 340px; width: 340px; display: flex; flex-direction: column; justify-content: space-around; flex-shrink: 0; }
+        .round-title { text-align: center; color: var(--accent); font-weight: bold; padding: 8px; background: var(--panel); border-radius: 6px; border: 1px solid var(--border); text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px; margin-bottom: 10px; }
 
         .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .match-header { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; display: flex; justify-content: space-between; font-weight: bold; }
@@ -43,8 +42,8 @@
     <div class="header">
         <h2>Sprint Torna Admin</h2>
         <div class="size-btns">
-            <button id="b16" class="active" onclick="setSize(16)">16-os Tábla</button>
-            <button id="b32" onclick="setSize(32)">32-es Tábla</button>
+            <button id="b16" onclick="userSelectSize(16)">16-os Tábla</button>
+            <button id="b32" onclick="userSelectSize(32)">32-es Tábla</button>
         </div>
     </div>
 
@@ -62,13 +61,20 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        let currentSize = 16;
+        let currentSize = null;
+        let activeRef = null;
+
+        function userSelectSize(size) {
+            db.ref('config/size').set(size);
+        }
 
         function setSize(size) {
+            if (currentSize === size) return;
             currentSize = size;
+
             document.getElementById('b16').classList.toggle('active', size === 16);
             document.getElementById('b32').classList.toggle('active', size === 32);
-            db.ref('config/size').set(size);
+
             renderBracket();
             listenData();
         }
@@ -86,7 +92,11 @@
             rounds.forEach((rName, rIdx) => {
                 const roundDiv = document.createElement('div');
                 roundDiv.className = 'round';
-                roundDiv.innerHTML = `<div class="round-title">${rName}</div>`;
+                
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'round-title';
+                titleDiv.innerText = rName;
+                roundDiv.appendChild(titleDiv);
 
                 for (let i = 0; i < matchCount; i++) {
                     const mId = `r${rIdx}_m${i}`;
@@ -168,7 +178,12 @@
         }
 
         function listenData() {
-            db.ref(`torna_${currentSize}`).on('value', snap => {
+            if (activeRef) {
+                activeRef.off(); // Leiratkozás az előző méret adatbázis-eseményeiről
+            }
+
+            activeRef = db.ref(`torna_${currentSize}`);
+            activeRef.on('value', snap => {
                 const data = snap.val() || {};
                 Object.keys(data).forEach(mId => {
                     const m = data[mId];
@@ -180,12 +195,11 @@
             });
         }
 
+        // Adatbázisból figyelem, hogy a Kijelző/Admin szinkronban legyen
         db.ref('config/size').on('value', snap => {
             const size = snap.val() || 16;
-            if (size !== currentSize) setSize(size);
+            setSize(size);
         });
-
-        setSize(16);
     </script>
 </body>
 </html>
