@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna - 16 Fős Kijelző</title>
+    <title>Sprint Torna - 16 Fős Kijelző (WNBA-NBC)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -18,27 +18,48 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; overflow-x: auto; }
+        body { background-color: var(--bg); color: var(--text); padding: 20px; min-height: 100vh; display: flex; flex-direction: column; }
 
-        .title-bar { text-align: center; font-size: 2.2rem; font-weight: 900; color: var(--accent); margin-bottom: 25px; letter-spacing: 2px; text-transform: uppercase; }
+        .title-bar { text-align: center; font-size: 2rem; font-weight: 900; color: var(--accent); margin-bottom: 20px; letter-spacing: 2px; text-transform: uppercase; }
 
-        .bracket { display: flex; gap: 20px; justify-content: space-between; align-items: stretch; min-width: 1000px; }
-        .round { flex: 1; display: flex; flex-direction: column; justify-content: space-around; min-width: 220px; }
-        .round-title { text-align: center; color: var(--accent); font-weight: bold; font-size: 1.1rem; margin-bottom: 12px; text-transform: uppercase; }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-shrink: 0; }
+        .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: 0.2s; }
+        .tab-btn:hover { background: #334155; }
+        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); box-shadow: 0 0 10px rgba(56, 189, 248, 0.3); }
 
-        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; margin: 6px 0; box-shadow: 0 4px 8px rgba(0,0,0,0.4); }
+        .content-area { flex-grow: 1; }
+
+        .round-pane { display: none; grid-template-columns: repeat(auto-fill, minmax(450px, 1fr)); gap: 20px; }
+        .round-pane.active { display: grid; }
+
+        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .match-info { display: flex; justify-content: space-between; font-size: 0.85rem; color: #94a3b8; font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+
+        .table-view { width: 100%; border-collapse: collapse; margin-top: 5px; }
+        .table-view th { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; padding: 4px; text-align: center; }
+        .table-view td { padding: 6px; text-align: center; font-weight: bold; font-size: 0.95rem; }
         
-        .p-row { display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 8px 10px; margin: 3px 0; border-radius: 5px; border-left: 4px solid transparent; font-weight: bold; }
-        .p-row.winner { border-left-color: var(--winner); background: #14532d; }
+        .p-name-cell { text-align: left !important; width: 45%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem !important; }
         
-        .p-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 1rem; }
-        .p-sets { background: var(--gold); color: #000; font-size: 1rem; padding: 2px 7px; border-radius: 4px; font-weight: 900; }
+        tr.p-row { background: #0f172a; border-radius: 4px; }
+        tr.p-row.winner { background: #14532d; color: #fff; }
+
+        .badge-set { background: var(--gold); color: #000; padding: 2px 6px; border-radius: 4px; }
+        .badge-total { color: var(--accent); }
     </style>
 </head>
 <body>
 
-    <div class="title-bar">SPRINT EGYÉNI BAJNOKSÁG (16 FŐ)</div>
-    <div class="bracket" id="bracket"></div>
+    <div class="title-bar">WNBA-NBC SPRINT BAJNOKSÁG (16 FŐ)</div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="showTab(0)">1/8 Döntő</button>
+        <button class="tab-btn" onclick="showTab(1)">Negyeddöntő</button>
+        <button class="tab-btn" onclick="showTab(2)">Elődöntő</button>
+        <button class="tab-btn" onclick="showTab(3)">Döntő</button>
+    </div>
+
+    <div class="content-area" id="panes-container"></div>
 
     <script>
         const firebaseConfig = {
@@ -52,43 +73,69 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        function showTab(idx) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+            document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
+        }
+
         function renderBracket() {
-            const container = document.getElementById('bracket');
+            const container = document.getElementById('panes-container');
             container.innerHTML = '';
             
             const rounds = ['1/8 Döntő', 'Negyeddöntő', 'Elődöntő', 'Döntő'];
             let matchCount = 8;
 
             rounds.forEach((rName, rIdx) => {
-                const roundDiv = document.createElement('div');
-                roundDiv.className = 'round';
-                roundDiv.innerHTML = `<div class="round-title">${rName}</div>`;
+                const paneDiv = document.createElement('div');
+                paneDiv.className = `round-pane ${rIdx === 0 ? 'active' : ''}`;
 
                 for (let i = 0; i < matchCount; i++) {
                     const mId = `r${rIdx}_m${i}`;
                     const card = document.createElement('div');
                     card.className = 'match-card';
                     card.innerHTML = `
-                        <div class="p-row" id="p1_row_${mId}">
-                            <span class="p-name" id="p1_name_${mId}">-</span>
-                            <span class="p-sets" id="p1_sets_${mId}">0</span>
+                        <div class="match-info">
+                            <span>Meccs #${i + 1}</span>
+                            <span>Pálya: <span id="lanes_${mId}">-</span> | Idő: <span id="time_${mId}">-</span></span>
                         </div>
-                        <div class="p-row" id="p2_row_${mId}">
-                            <span class="p-name" id="p2_name_${mId}">-</span>
-                            <span class="p-sets" id="p2_sets_${mId}">0</span>
-                        </div>
+                        <table class="table-view">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;">Játékos</th>
+                                    <th>Össz.</th>
+                                    <th>SV</th>
+                                    <th>Szett</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="p-row" id="p1_row_${mId}">
+                                    <td class="p-name-cell" id="p1_name_${mId}">-</td>
+                                    <td class="badge-total" id="p1_tot_${mId}">0</td>
+                                    <td id="p1_sv_${mId}">-</td>
+                                    <td><span class="badge-set" id="p1_sets_${mId}">0</span></td>
+                                </tr>
+                                <tr class="p-row" id="p2_row_${mId}">
+                                    <td class="p-name-cell" id="p2_name_${mId}">-</td>
+                                    <td class="badge-total" id="p2_tot_${mId}">0</td>
+                                    <td id="p2_sv_${mId}">-</td>
+                                    <td><span class="badge-set" id="p2_sets_${mId}">0</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
                     `;
-                    roundDiv.appendChild(card);
+                    paneDiv.appendChild(card);
                 }
-                container.appendChild(roundDiv);
+                container.appendChild(paneDiv);
                 matchCount /= 2;
             });
         }
 
         function calcMatch(d) {
-            if (!d) return { p1_s: 0, p2_s: 0, winner: null };
+            if (!d) return { p1_s: 0, p2_s: 0, p1_tot: 0, p2_tot: 0, winner: null };
 
             let p1_s = 0, p2_s = 0;
+            const p1_tot = (d.p1_s1 || 0) + (d.p1_s2 || 0);
+            const p2_tot = (d.p2_s1 || 0) + (d.p2_s2 || 0);
 
             if (d.p1_s1 > d.p2_s1) p1_s++; 
             else if (d.p2_s1 > d.p1_s1) p2_s++;
@@ -112,7 +159,7 @@
                 else if ((d.p2_msv || 0) > (d.p1_msv || 0)) winner = 2;
             }
 
-            return { p1_s, p2_s, winner };
+            return { p1_s, p2_s, p1_tot, p2_tot, winner };
         }
 
         function listenData() {
@@ -122,10 +169,25 @@
                     const m = data[mId];
                     const res = calcMatch(m);
 
+                    const lanes = document.getElementById(`lanes_${mId}`);
+                    const time = document.getElementById(`time_${mId}`);
+                    if (lanes) lanes.innerText = m.lanes || '-';
+                    if (time) time.innerText = m.time || '-';
+
                     const p1Name = document.getElementById(`p1_name_${mId}`);
                     const p2Name = document.getElementById(`p2_name_${mId}`);
                     if (p1Name) p1Name.innerText = m.p1_name || '-';
                     if (p2Name) p2Name.innerText = m.p2_name || '-';
+
+                    const p1Tot = document.getElementById(`p1_tot_${mId}`);
+                    const p2Tot = document.getElementById(`p2_tot_${mId}`);
+                    if (p1Tot) p1Tot.innerText = res.p1_tot;
+                    if (p2Tot) p2Tot.innerText = res.p2_tot;
+
+                    const p1Sv = document.getElementById(`p1_sv_${mId}`);
+                    const p2Sv = document.getElementById(`p2_sv_${mId}`);
+                    if (p1Sv) p1Sv.innerText = m.p1_msv || '-';
+                    if (p2Sv) p2Sv.innerText = m.p2_msv || '-';
 
                     const p1Sets = document.getElementById(`p1_sets_${mId}`);
                     const p2Sets = document.getElementById(`p2_sets_${mId}`);
