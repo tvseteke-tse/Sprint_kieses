@@ -15,6 +15,8 @@
             --border: #334155;
             --gold: #f59e0b;
             --green: #10b981;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -32,19 +34,26 @@
         .status-success { background: #15803d !important; color: #fff !important; }
         .status-error { background: #b91c1c !important; color: #fff !important; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); gap: 15px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); gap: 15px; flex-wrap: wrap; }
         .header-title-input {
             background: transparent;
             border: 1px solid transparent;
             color: var(--accent);
             font-size: 1.4rem;
             font-weight: bold;
-            width: 100%;
+            flex: 1;
+            min-width: 250px;
             outline: none;
             border-radius: 4px;
             padding: 4px 8px;
         }
         .header-title-input:focus { background: #0f172a; border-color: var(--border); }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
         .btn-import {
             background: var(--green);
@@ -58,6 +67,19 @@
             transition: background 0.2s;
         }
         .btn-import:hover { background: #059669; }
+
+        .btn-reset {
+            background: var(--danger);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-reset:hover { background: var(--danger-hover); }
 
         .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
         .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; }
@@ -99,7 +121,10 @@
 
     <div class="header">
         <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" onchange="saveTitle(this.value)">
-        <button class="btn-import" onclick="importFromEgyeni16()">Importálás Egyéni 16-ból</button>
+        <div class="header-actions">
+            <button class="btn-import" onclick="importFromEgyeni16()">Importálás Egyéni 16-ból</button>
+            <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
+        </div>
     </div>
 
     <div class="tabs">
@@ -219,10 +244,8 @@
                     return;
                 }
 
-                // Tömb-szerű feldolgozás (objektum vagy tömb)
                 let list = Array.isArray(playersData) ? playersData : Object.values(playersData);
                 
-                // Nevek kinyerése
                 let playerNames = list.map(p => {
                     if (typeof p === 'string') return p;
                     return p.name || p.nev || p.player_name || '-';
@@ -233,16 +256,15 @@
                     return;
                 }
 
-                // Párosítási kulcs: 1-16, 8-9, 4-13, 5-12, 2-15, 7-10, 3-14, 6-11 (0-indexeléssel)
                 const matchups = [
-                    { m: 'm_1', p1: 0,  p2: 15 }, // 1. vs 16.
-                    { m: 'm_2', p1: 7,  p2: 8  }, // 8. vs 9.
-                    { m: 'm_3', p1: 3,  p2: 12 }, // 4. vs 13.
-                    { m: 'm_4', p1: 4,  p2: 11 }, // 5. vs 12.
-                    { m: 'm_5', p1: 1,  p2: 14 }, // 2. vs 15.
-                    { m: 'm_6', p1: 6,  p2: 9  }, // 7. vs 10.
-                    { m: 'm_7', p1: 2,  p2: 13 }, // 3. vs 14.
-                    { m: 'm_8', p1: 5,  p2: 10 }  // 6. vs 11.
+                    { m: 'm_1', p1: 0,  p2: 15 },
+                    { m: 'm_2', p1: 7,  p2: 8  },
+                    { m: 'm_3', p1: 3,  p2: 12 },
+                    { m: 'm_4', p1: 4,  p2: 11 },
+                    { m: 'm_5', p1: 1,  p2: 14 },
+                    { m: 'm_6', p1: 6,  p2: 9  },
+                    { m: 'm_7', p1: 2,  p2: 13 },
+                    { m: 'm_8', p1: 5,  p2: 10 }
                 ];
 
                 let updates = {};
@@ -261,6 +283,27 @@
             }).catch(err => {
                 showStatus("Hiba az adatok lekérésekor: " + err.message, true);
             });
+        }
+
+        // Adatok törlése az admin felületről
+        function resetTournamentData() {
+            if (!db) return;
+            const confirm1 = confirm("Biztosan törölni szeretnéd az ÖSSZES beírt eredményt és játékost?");
+            if (!confirm1) return;
+
+            const confirm2 = confirm("FIGYELEM: Ez a művelet végleges és azonnal töröl mindent a Firebase-ből! Biztosan folytatod?");
+            if (!confirm2) return;
+
+            db.ref('torna_16').remove()
+                .then(() => {
+                    showStatus("Az adatbázis sikeresen kiürítve!");
+                    document.querySelectorAll('input').forEach(input => {
+                        if (input.id !== 'admin_title') input.value = '';
+                    });
+                })
+                .catch(error => {
+                    showStatus("Hiba történt a törlés során: " + error.message, true);
+                });
         }
 
         function updateDB(mId, key, val) {
@@ -381,11 +424,11 @@
             toggleInput(`${mId}_p1_msv`, msvActive);
             toggleInput(`${mId}_p2_msv`, msvActive);
 
-            // MSV hozzáadása a szettpontokhoz (+1 szettpont az MSV győztesének)
+            // MSV hozzáadása a szettpontokhoz
             if (msvActive) {
                 const msv1 = getVal('p1_msv') || 0, msv2 = getVal('p2_msv') || 0;
-                if (msv1 > msv2) p1_sets++;      // 2-1 lesz
-                else if (msv2 > msv1) p2_sets++; // 1-2 lesz
+                if (msv1 > msv2) p1_sets++;
+                else if (msv2 > msv1) p2_sets++;
             }
 
             // Győztes meghatározása és automatikus továbbjuttatása
