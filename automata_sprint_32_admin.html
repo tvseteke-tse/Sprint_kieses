@@ -257,7 +257,7 @@
                                 <span>Meccs #${m}</span>
                                 <div>
                                     Pálya: <input type="text" id="${mId}_lanes" class="admin-input input-meta input-readonly" readonly onchange="updateDB('${mId}', 'lanes', this.value)">
-                                    Idő: <input type="text" id="${mId}_time" class="admin-input input-meta" onchange="updateDB('${mId}', 'time', this.value)">
+                                    Idő: <input type="text" id="${mId}_time" class="admin-input input-meta input-readonly" readonly>
                                 </div>
                             </div>
                             <div class="p-row">
@@ -468,7 +468,7 @@
                 if (s2_1 > s2_2) p1_sets++;
                 else if (s2_2 > s2_1) p2_sets++;
                 else {
-                    const sv2_1 = getVal('p2_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
+                    const sv2_1 = getVal('p1_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
                     if (sv2_1 > sv2_2) p1_sets++;
                     else if (sv2_2 > sv2_1) p2_sets++;
                 }
