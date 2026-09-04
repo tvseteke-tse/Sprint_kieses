@@ -267,17 +267,16 @@
                 const data = snap.val() || {};
                 let players = [];
 
-                // Beolvassuk a gyökér alatti kulcsokat/objektumokat
                 Object.keys(data).forEach(key => {
                     const p = data[key];
-                    if (p) {
-                        // Név kinyerése (lehet 'nev', 'name' vagy közvetlen érték)
-                        const nev = p.nev || p.name || (typeof p === 'string' ? p : '');
+                    // Kizárjuk az objektumon kívüli, vagy 'title' / 'nev' főkulcsokat
+                    if (p && typeof p === 'object' && key !== 'title' && key !== 'nev') {
+                        const nev = p.nev || p.name || '';
                         
-                        if (nev) {
+                        // Szűrjük a tornacímeket és üres mezőket
+                        if (nev && !nev.toLowerCase().includes('bajnokság') && !nev.toLowerCase().includes('verseny')) {
                             const teli = parseInt(p.teli, 10) || 0;
                             const tarolas = parseInt(p.tarolas, 10) || 0;
-                            // Ha van 'osszes' mező azt használja, különben kiszámolja
                             const osszes = (p.osszes !== undefined && p.osszes !== '') 
                                 ? parseInt(p.osszes, 10) 
                                 : (teli + tarolas);
@@ -292,7 +291,7 @@
                 });
 
                 if (players.length === 0) {
-                    alert("Nem találhatók versenyzői adatok az 'egyeni_16_bowling' csomópont alatt!");
+                    alert("Nem találhatók érvényes versenyzői adatok az 'egyeni_16_bowling' csomópont alatt!");
                     showStatus("Nincs beolvasható adat.", true);
                     return;
                 }
@@ -329,7 +328,7 @@
                     if (error) {
                         showStatus("Importálási hiba: " + error.message, true);
                     } else {
-                        showStatus("Beolvasva az 'egyeni_16_bowling' adatbázisból!");
+                        showStatus("Sikeresen beolvasva a 16 játékos a Sprint ágba!");
                     }
                 });
             });
