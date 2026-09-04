@@ -204,6 +204,23 @@
             25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
         };
 
+        // Automatikus időpont generálás: 09:00-tól kezdve, 2 meccsenként +30 perc
+        function generateDefaultTimes() {
+            const times = {};
+            let currentMinutes = 9 * 60; // 09:00 percekben
+            for (let m = 1; m <= 31; m++) {
+                const hours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+                const mins = (currentMinutes % 60).toString().padStart(2, '0');
+                times[m] = `${hours}:${mins}`;
+                if (m % 2 === 0) {
+                    currentMinutes += 30; // Minden 2. meccs után 30 percet ugrik
+                }
+            }
+            return times;
+        }
+
+        const defaultTimes = generateDefaultTimes();
+
         function switchTab(idx) {
             document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
             document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
@@ -232,7 +249,6 @@
                     const m = matchNum;
                     const mId = `m_${m}`;
 
-                    // Az összes játékosnév mező zárolva van
                     const nameAttr = 'readonly class="admin-input input-name input-readonly"';
 
                     paneDiv.innerHTML += `
@@ -408,6 +424,7 @@
                             let val = mData[f];
                             if (val === undefined || val === null) {
                                 if (f === 'lanes') val = defaultLanes[m] || '';
+                                else if (f === 'time') val = defaultTimes[m] || '';
                                 else val = '';
                             }
                             el.value = val;
@@ -451,7 +468,7 @@
                 if (s2_1 > s2_2) p1_sets++;
                 else if (s2_2 > s2_1) p2_sets++;
                 else {
-                    const sv2_1 = getVal('p1_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
+                    const sv2_1 = getVal('p2_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
                     if (sv2_1 > sv2_2) p1_sets++;
                     else if (sv2_2 > sv2_1) p2_sets++;
                 }
