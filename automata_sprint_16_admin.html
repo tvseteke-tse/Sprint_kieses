@@ -55,6 +55,19 @@
             flex-wrap: wrap;
         }
 
+        .btn-import {
+            background: var(--green);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-import:hover { background: #059669; }
+
         .btn-reset {
             background: var(--danger);
             color: #ffffff;
@@ -109,7 +122,8 @@
     <div class="header">
         <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 16 Fő" onchange="saveTitle(this.value)">
         <div class="header-actions">
-            <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
+            <button class="btn-import" onclick="importFromEgyeni()">📥 Beolvasás Egyéniből</button>
+            <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése</button>
         </div>
     </div>
 
@@ -199,7 +213,6 @@
                     const m = matchNum;
                     const mId = `m_${m}`;
 
-                    // Az első körben a nevek kézzel szerkeszthetők, a későbbi körökben automatikusan továbbítódnak
                     const nameAttr = (rIdx === 0) 
                         ? `class="admin-input input-name" onchange="updateDB('${mId}', 'p1_name', this.value)"`
                         : `readonly class="admin-input input-name input-readonly"`;
@@ -240,13 +253,92 @@
             });
         }
 
+        // --- IMPORTÁLÁS A /egyeni_16_bowling CSOMÓPONTBÓL ---
+        function importFromEgyeni() {
+            if (!db) return;
+            
+            if (!confirm("Biztosan be akarod tölteni az egyeni_16_bowling adatbázisból a játékosokat?\n\nEz felülírja a jelenlegi nyolcaddöntős neveket!")) {
+                return;
+            }
+
+            showStatus("Egyéni (egyeni_16_bowling) eredmények lekérdezése...");
+
+            db.ref('egyeni_16_bowling').once('value', snap => {
+                const data = snap.val() || {};
+                let players = [];
+
+                // Beolvassuk a gyökér alatti kulcsokat/objektumokat
+                Object.keys(data).forEach(key => {
+                    const p = data[key];
+                    if (p) {
+                        // Név kinyerése (lehet 'nev', 'name' vagy közvetlen érték)
+                        const nev = p.nev || p.name || (typeof p === 'string' ? p : '');
+                        
+                        if (nev) {
+                            const teli = parseInt(p.teli, 10) || 0;
+                            const tarolas = parseInt(p.tarolas, 10) || 0;
+                            // Ha van 'osszes' mező azt használja, különben kiszámolja
+                            const osszes = (p.osszes !== undefined && p.osszes !== '') 
+                                ? parseInt(p.osszes, 10) 
+                                : (teli + tarolas);
+                            
+                            players.push({
+                                nev: nev,
+                                osszes: osszes,
+                                tarolas: tarolas
+                            });
+                        }
+                    }
+                });
+
+                if (players.length === 0) {
+                    alert("Nem találhatók versenyzői adatok az 'egyeni_16_bowling' csomópont alatt!");
+                    showStatus("Nincs beolvasható adat.", true);
+                    return;
+                }
+
+                // Rendezés: 1. Összes fa (csökkenő), 2. Tarolás (csökkenő)
+                players.sort((a, b) => {
+                    if (b.osszes !== a.osszes) return b.osszes - a.osszes;
+                    return b.tarolas - a.tarolas;
+                });
+
+                // Kiemelési párosítások 16 fős Sprinthez
+                // m1: 1-16, m2: 8-9, m3: 5-12, m4: 4-13, m5: 3-14, m6: 6-11, m7: 7-10, m8: 2-15
+                const seedings = [
+                    { m: 1, p1: 1,  p2: 16 },
+                    { m: 2, p1: 8,  p2: 9  },
+                    { m: 3, p1: 5,  p2: 12 },
+                    { m: 4, p1: 4,  p2: 13 },
+                    { m: 5, p1: 3,  p2: 14 },
+                    { m: 6, p1: 6,  p2: 11 },
+                    { m: 7, p1: 7,  p2: 10 },
+                    { m: 8, p1: 2,  p2: 15 }
+                ];
+
+                const updates = {};
+                seedings.forEach(pair => {
+                    const player1 = players[pair.p1 - 1] ? players[pair.p1 - 1].nev : '';
+                    const player2 = players[pair.p2 - 1] ? players[pair.p2 - 1].nev : '';
+
+                    updates[`torna/m_${pair.m}/p1_name`] = player1;
+                    updates[`torna/m_${pair.m}/p2_name`] = player2;
+                });
+
+                db.ref().update(updates, (error) => {
+                    if (error) {
+                        showStatus("Importálási hiba: " + error.message, true);
+                    } else {
+                        showStatus("Beolvasva az 'egyeni_16_bowling' adatbázisból!");
+                    }
+                });
+            });
+        }
+
         function resetTournamentData() {
             if (!db) return;
-            const confirm1 = confirm("Biztosan törölni szeretnéd az ÖSSZES beírt eredményt és játékost?");
-            if (!confirm1) return;
-
-            const confirm2 = confirm("FIGYELEM: Ez a művelet végleges és azonnal töröl mindent a Firebase torna ágáról! Biztosan folytatod?");
-            if (!confirm2) return;
+            if (!confirm("Biztosan törölni szeretnéd az ÖSSZES beírt eredményt és játékost?")) return;
+            if (!confirm("FIGYELEM: Ez a művelet végleges és azonnal töröl mindent a Firebase torna ágáról! Biztosan folytatod?")) return;
 
             db.ref('torna').remove()
                 .then(() => {
@@ -354,7 +446,6 @@
             let p1_sets = 0, p2_sets = 0;
             let s1Finished = false, s2Finished = false;
 
-            // 1. Szett értékelése
             if (s1_1 !== null && s1_2 !== null) {
                 if (s1_1 > s1_2) {
                     p1_sets++;
@@ -372,7 +463,6 @@
                 }
             }
 
-            // 2. Szett értékelése
             if (s2_1 !== null && s2_2 !== null) {
                 if (s2_1 > s2_2) {
                     p1_sets++;
@@ -397,7 +487,6 @@
             let winner = null;
             let matchFinished = false;
 
-            // Csak akkor tekintjük befejezettnek a meccset, ha mindkét szett lefutott
             if (s1Finished && s2Finished) {
                 if (p1_sets === 2) {
                     winner = 1;
@@ -427,7 +516,6 @@
                         db.ref(targetPath).transaction(currentVal => winnerName);
                     }
                 } else {
-                    // Ha a meccs még nem fejeződött be, a következő körben a mező üres marad
                     db.ref(targetPath).transaction(currentVal => '');
                 }
             }
