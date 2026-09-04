@@ -269,20 +269,22 @@
 
                 Object.keys(data).forEach(key => {
                     const p = data[key];
-                    // Kizárjuk az objektumon kívüli, vagy 'title' / 'nev' főkulcsokat
-                    if (p && typeof p === 'object' && key !== 'title' && key !== 'nev') {
-                        const nev = p.nev || p.name || '';
+                    if (p && typeof p === 'object' && key !== 'title') {
+                        const nev = p.nev || p.name || p.jatekos_nev || p.jatekosegyesulet || '';
                         
-                        // Szűrjük a tornacímeket és üres mezőket
-                        if (nev && !nev.toLowerCase().includes('bajnokság') && !nev.toLowerCase().includes('verseny')) {
+                        if (nev && typeof nev === 'string' && nev.trim() !== '' && nev !== 'Játékos neve') {
                             const teli = parseInt(p.teli, 10) || 0;
                             const tarolas = parseInt(p.tarolas, 10) || 0;
-                            const osszes = (p.osszes !== undefined && p.osszes !== '') 
-                                ? parseInt(p.osszes, 10) 
-                                : (teli + tarolas);
+                            
+                            let osszes = 0;
+                            if (p.osszes !== undefined && p.osszes !== '' && p.osszes !== null) {
+                                osszes = parseInt(p.osszes, 10) || 0;
+                            } else {
+                                osszes = teli + tarolas;
+                            }
                             
                             players.push({
-                                nev: nev,
+                                nev: nev.trim(),
                                 osszes: osszes,
                                 tarolas: tarolas
                             });
@@ -302,8 +304,7 @@
                     return b.tarolas - a.tarolas;
                 });
 
-                // Kiemelési párosítások 16 fős Sprinthez
-                // m1: 1-16, m2: 8-9, m3: 5-12, m4: 4-13, m5: 3-14, m6: 6-11, m7: 7-10, m8: 2-15
+                // Kiemelési párosítások 16 fős Sprinthez (1-16, 8-9, 5-12, 4-13, 3-14, 6-11, 7-10, 2-15)
                 const seedings = [
                     { m: 1, p1: 1,  p2: 16 },
                     { m: 2, p1: 8,  p2: 9  },
@@ -328,7 +329,7 @@
                     if (error) {
                         showStatus("Importálási hiba: " + error.message, true);
                     } else {
-                        showStatus("Sikeresen beolvasva a 16 játékos a Sprint ágba!");
+                        showStatus(`Sikeresen beolvasva ${players.length} játékos a Sprint ágba!`);
                     }
                 });
             });
