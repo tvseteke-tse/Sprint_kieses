@@ -1,205 +1,464 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teke Torna Kijelző</title>
-  <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --accent: #38bdf8;
-      --text: #f8fafc;
-      --subtext: #94a3b8;
-      --active-tab: #2563eb;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna Kijelző - 32 Fő</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg: #090d16;
+            --panel: #111827;
+            --panel-header: #1f2937;
+            --accent: #38bdf8;
+            --text: #f9fafb;
+            --text-muted: #9ca3af;
+            --border: #1f2937;
+            --gold: #fbbf24;
+            --winner-bg: rgba(16, 185, 129, 0.15);
+            --winner-border: #10b981;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg-color); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-
-    header { text-align: center; margin-bottom: 20px; }
-    h1 { font-size: 2.2rem; color: var(--accent); letter-spacing: 1px; }
-
-    /* Körök / Fülek sávja */
-    .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; }
-    .tab-btn {
-      background-color: var(--card-bg);
-      color: var(--subtext);
-      border: 2px solid #334155;
-      padding: 10px 22px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .tab-btn:hover { border-color: var(--accent); color: var(--text); }
-    .tab-btn.active { background-color: var(--active-tab); color: #fff; border-color: var(--accent); box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
-
-    /* Párok / Pályák ráácsa */
-    .matches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; width: 100%; max-width: 1200px; }
-
-    /* Mérkőzés kártya */
-    .match-card {
-      background-color: var(--card-bg);
-      border-radius: 12px;
-      padding: 20px;
-      border: 1px solid #334155;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    }
-    .lane-header { font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
-
-    .player-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #334155; }
-    .player-row:last-child { border-bottom: none; }
-
-    .player-info { display: flex; flex-direction: column; }
-    .player-name { font-size: 1.2rem; font-weight: 600; }
-    .player-team { font-size: 0.85rem; color: var(--subtext); }
-
-    .score-box { font-size: 2rem; font-weight: bold; color: #f59e0b; font-family: monospace; }
-    
-    .no-data { text-align: center; color: var(--subtext); font-style: italic; width: 100%; margin-top: 40px; }
-  </style>
-
-  <!-- Firebase v9 SDK SDKs -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
-
-    // FIXME: Cseréld ki a saját Firebase konfigurációdra!
-    const firebaseConfig = {
-      apiKey: "PÉLDA_API_KEY",
-      authDomain: "projekt-id.firebaseapp.com",
-      databaseURL: "https://projekt-id-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "projekt-id",
-      storageBucket: "projekt-id.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcdef"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    let currentData = null;
-    let selectedRound = "kor_1"; // Alapértelmezett kör
-
-    const tabsContainer = document.getElementById("tabs");
-    const matchesGrid = document.getElementById("matchesGrid");
-
-    // Firebase adatok valós idejű figyelése
-    const tornaRef = ref(db, 'torna');
-    onValue(tornaRef, (snapshot) => {
-      currentData = snapshot.val();
-      if (currentData) {
-        renderTabs();
-        renderMatches();
-      } else {
-        matchesGrid.innerHTML = '<div class="no-data">Nincs elérhető adatsor az adatbázisban.</div>';
-      }
-    });
-
-    // Fülek (Körök) kirajzolása
-    function renderTabs() {
-      tabsContainer.innerHTML = '';
-      const rounds = Object.keys(currentData);
-
-      if (rounds.length === 0) return;
-
-      // Ha a kiválasztott kör már nem létezik, átállunk az elsőre
-      if (!currentData[selectedRound]) {
-        selectedRound = rounds[0];
-      }
-
-      rounds.forEach((roundKey) => {
-        const btn = document.createElement('button');
-        btn.className = `tab-btn ${roundKey === selectedRound ? 'active' : ''}`;
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        // Formázott név pl. "kor_1" -> "1. KÖR"
-        const label = roundKey.replace('kor_', '') + '. KÖR';
-        btn.textContent = label;
+        body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            padding: 10px; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
 
-        btn.onclick = () => {
-          selectedRound = roundKey;
-          renderTabs();
-          renderMatches();
-        };
+        .tournament-header {
+            text-align: center;
+            padding: 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
 
-        tabsContainer.appendChild(btn);
-      });
-    }
+        .tournament-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
 
-    // Pályák / Mérkőzések kirajzolása a kiválasztott körhöz
-    function renderMatches() {
-      matchesGrid.innerHTML = '';
-      const roundData = currentData[selectedRound];
+        /* Fülek (Tabs) stílusa */
+        .tabs-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
 
-      if (!roundData) {
-        matchesGrid.innerHTML = '<div class="no-data">Ebből a körből még nincsenek adatok.</div>';
-        return;
-      }
+        .tab-btn {
+            background: var(--panel-header);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+        }
 
-      // Végigmegyünk a körhöz tartozó meccseken / pályákon
-      Object.keys(roundData).forEach((matchKey, index) => {
-        const match = roundData[matchKey];
+        .tab-btn:hover {
+            background: #374151;
+            color: var(--text);
+        }
 
-        const card = document.createElement('div');
-        card.className = 'match-card';
+        .tab-btn.active {
+            background: var(--accent);
+            color: #000000;
+            border-color: var(--accent);
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+        }
 
-        // Csak akkor írjuk ki a nevet, ha tényleg létezik és nem üres string
-        const p1Name = (match.player1 && match.player1.name && match.player1.name.trim() !== '') 
-          ? match.player1.name 
-          : '—';
-        const p1Team = match.player1?.team || '';
-        const p1Score = match.player1?.score ?? 0;
+        .bracket-container {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
 
-        const p2Name = (match.player2 && match.player2.name && match.player2.name.trim() !== '') 
-          ? match.player2.name 
-          : '—';
-        const p2Team = match.player2?.team || '';
-        const p2Score = match.player2?.score ?? 0;
+        .round-column {
+            display: none; /* Alapértelmezetten rejtve, JS váltja */
+            width: 100%;
+            max-width: 900px;
+            margin: 0 auto;
+            flex-direction: column;
+        }
 
-        card.innerHTML = `
-          <div class="lane-header">Pálya / Pár #${index + 1}</div>
-          <div class="player-row">
-            <div class="player-info">
-              <span class="player-name">${escapeHtml(p1Name)}</span>
-              ${p1Team ? `<span class="player-team">${escapeHtml(p1Team)}</span>` : ''}
-            </div>
-            <div class="score-box">${p1Score}</div>
-          </div>
-          <div class="player-row">
-            <div class="player-info">
-              <span class="player-name">${escapeHtml(p2Name)}</span>
-              ${p2Team ? `<span class="player-team">${escapeHtml(p2Team)}</span>` : ''}
-            </div>
-            <div class="score-box">${p2Score}</div>
-          </div>
-        `;
+        .round-column.active {
+            display: flex;
+        }
 
-        matchesGrid.appendChild(card);
-      });
-    }
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 12px;
+        }
 
-    function escapeHtml(text) {
-      return text.replace(/[&<>"']/g, function(m) {
-        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-      });
-    }
-  </script>
+        .match-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 4px;
+            margin-bottom: 2px;
+            font-weight: bold;
+        }
+
+        .p-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0f172a;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+        }
+
+        .p-row.winner {
+            background: var(--winner-bg);
+            border-color: var(--winner-border);
+        }
+
+        .p-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            padding-right: 6px;
+        }
+
+        .p-scores {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .score-box {
+            font-size: 0.75rem;
+            font-weight: bold;
+            background: #1e293b;
+            padding: 3px 5px;
+            border-radius: 3px;
+            min-width: 28px;
+            text-align: center;
+            color: #e2e8f0;
+        }
+
+        .sv-box {
+            color: var(--gold);
+            font-size: 0.7rem;
+        }
+
+        .msv-box {
+            color: #ef4444;
+            font-size: 0.7rem;
+            font-weight: 800;
+        }
+
+        /* Összes Fa (ÖF) cella stílusa */
+        .of-box {
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 0.8rem;
+            font-weight: bold;
+            min-width: 36px;
+        }
+
+        .set-total {
+            font-size: 0.85rem;
+            font-weight: 800;
+            background: #334155;
+            color: var(--accent);
+            padding: 3px 6px;
+            border-radius: 3px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .winner .set-total {
+            background: var(--winner-border);
+            color: #ffffff;
+        }
+    </style>
 </head>
 <body>
 
-  <header>
-    <h1>VERSENY KIJELZŐ</h1>
-  </header>
+    <div class="tournament-header">
+        <div class="tournament-title" id="display_title">Sprint Torna - 32 Fő</div>
+    </div>
 
-  <!-- Körök fülei -->
-  <div class="tabs-container" id="tabs"></div>
+    <!-- Körök váltógombjai (Fülek) -->
+    <div class="tabs-container" id="tabs_container"></div>
 
-  <!-- Kiválasztott kör eredményei -->
-  <div class="matches-grid" id="matchesGrid">
-    <div class="no-data">Adatok betöltése...</div>
-  </div>
+    <!-- Meccsek konténere -->
+    <div class="bracket-container" id="bracket"></div>
 
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Pályabeosztás alapértelmezett értékek
+        const defaultLanes = {
+            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
+            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
+            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
+            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
+        };
+
+        const rounds = [
+            { id: 'r1', name: '16 Közé Jutás', count: 16 },
+            { id: 'r2', name: 'Nyolcaddöntő', count: 8 },
+            { id: 'r3', name: 'Negyeddöntő', count: 4 },
+            { id: 'r4', name: 'Elődöntő', count: 2 },
+            { id: 'r5', name: 'Döntő', count: 1 }
+        ];
+
+        function initBracket() {
+            const bracket = document.getElementById('bracket');
+            const tabsContainer = document.getElementById('tabs_container');
+            
+            bracket.innerHTML = '';
+            tabsContainer.innerHTML = '';
+
+            let matchNum = 1;
+
+            rounds.forEach((round, index) => {
+                // Fülek gombjainak létrehozása
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `tab-btn ${index === 0 ? 'active' : ''}`;
+                tabBtn.textContent = round.name;
+                tabBtn.onclick = () => switchTab(round.id);
+                tabsContainer.appendChild(tabBtn);
+
+                // Körök nézetének létrehozása
+                const col = document.createElement('div');
+                col.className = `round-column ${index === 0 ? 'active' : ''}`;
+                col.id = `round_${round.id}`;
+
+                const grid = document.createElement('div');
+                grid.className = 'matches-grid';
+
+                for (let i = 0; i < round.count; i++) {
+                    const m = matchNum;
+                    const mId = `m_${m}`;
+
+                    grid.innerHTML += `
+                        <div class="match-card" id="card_${mId}">
+                            <div class="match-header">
+                                <span>#${m}</span>
+                                <span id="${mId}_info">Pál: ${defaultLanes[m]}</span>
+                            </div>
+                            
+                            <!-- Játékos 1 -->
+                            <div class="p-row" id="${mId}_p1_row">
+                                <span class="p-name" id="${mId}_p1_name">-</span>
+                                <div class="p-scores">
+                                    <span class="score-box" id="${mId}_p1_s1">-</span>
+                                    <span class="score-box sv-box" id="${mId}_p1_sv1"></span>
+                                    <span class="score-box" id="${mId}_p1_s2">-</span>
+                                    <span class="score-box sv-box" id="${mId}_p1_sv2"></span>
+                                    <span class="score-box msv-box" id="${mId}_p1_msv"></span>
+                                    <span class="score-box of-box" id="${mId}_p1_of" title="Összes fa">-</span>
+                                    <span class="set-total" id="${mId}_p1_sets">0</span>
+                                </div>
+                            </div>
+
+                            <!-- Játékos 2 -->
+                            <div class="p-row" id="${mId}_p2_row">
+                                <span class="p-name" id="${mId}_p2_name">-</span>
+                                <div class="p-scores">
+                                    <span class="score-box" id="${mId}_p2_s1">-</span>
+                                    <span class="score-box sv-box" id="${mId}_p2_sv1"></span>
+                                    <span class="score-box" id="${mId}_p2_s2">-</span>
+                                    <span class="score-box sv-box" id="${mId}_p2_sv2"></span>
+                                    <span class="score-box msv-box" id="${mId}_p2_msv"></span>
+                                    <span class="score-box of-box" id="${mId}_p2_of" title="Összes fa">-</span>
+                                    <span class="set-total" id="${mId}_p2_sets">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    matchNum++;
+                }
+
+                col.appendChild(grid);
+                bracket.appendChild(col);
+            });
+        }
+
+        function switchTab(roundId) {
+            // Aktív gomb stílus váltása
+            const buttons = document.querySelectorAll('.tab-btn');
+            rounds.forEach((r, idx) => {
+                if (r.id === roundId) {
+                    buttons[idx].classList.add('active');
+                } else {
+                    buttons[idx].classList.remove('active');
+                }
+            });
+
+            // Aktív kör megjelenítése
+            const columns = document.querySelectorAll('.round-column');
+            columns.forEach(col => {
+                if (col.id === `round_${roundId}`) {
+                    col.classList.add('active');
+                } else {
+                    col.classList.remove('active');
+                }
+            });
+        }
+
+        function listenToFirebase() {
+            db.ref('torna_32').on('value', snap => {
+                const data = snap.val() || {};
+
+                // Cím frissítése
+                if (data.title) {
+                    document.getElementById('display_title').textContent = data.title;
+                }
+
+                for (let m = 1; m <= 31; m++) {
+                    const mId = `m_${m}`;
+                    const d = data[mId] || {};
+
+                    // Infó sáv (Pálya / Idő)
+                    const lanes = d.lanes || defaultLanes[m];
+                    const time = d.time ? ` | ${d.time}` : '';
+                    document.getElementById(`${mId}_info`).textContent = `P: ${lanes}${time}`;
+
+                    // Nevek
+                    document.getElementById(`${mId}_p1_name`).textContent = d.p1_name || '-';
+                    document.getElementById(`${mId}_p2_name`).textContent = d.p2_name || '-';
+
+                    // Pontszámok és szett kiszámítások
+                    const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
+
+                    const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
+                    const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
+
+                    // Pontszámok kiírása
+                    document.getElementById(`${mId}_p1_s1`).textContent = s1_1 !== null ? s1_1 : '-';
+                    document.getElementById(`${mId}_p2_s1`).textContent = s1_2 !== null ? s1_2 : '-';
+                    document.getElementById(`${mId}_p1_s2`).textContent = s2_1 !== null ? s2_1 : '-';
+                    document.getElementById(`${mId}_p2_s2`).textContent = s2_2 !== null ? s2_2 : '-';
+
+                    // ÖSSZES FA (ÖF) kiszámítása (kizárólag s1 + s2)
+                    const p1_of = (s1_1 !== null || s2_1 !== null) ? ((s1_1 || 0) + (s2_1 || 0)) : '-';
+                    const p2_of = (s1_2 !== null || s2_2 !== null) ? ((s1_2 || 0) + (s2_2 || 0)) : '-';
+
+                    document.getElementById(`${mId}_p1_of`).textContent = p1_of;
+                    document.getElementById(`${mId}_p2_of`).textContent = p2_of;
+
+                    // SV (Hirtelen halál a szettben)
+                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
+                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
+
+                    renderExtraBox(`${mId}_p1_sv1`, sv1_1);
+                    renderExtraBox(`${mId}_p2_sv1`, sv1_2);
+                    renderExtraBox(`${mId}_p1_sv2`, sv2_1);
+                    renderExtraBox(`${mId}_p2_sv2`, sv2_2);
+
+                    // Szettpont számítás
+                    let p1_sets = 0, p2_sets = 0;
+
+                    if (s1_1 !== null && s1_2 !== null) {
+                        if (s1_1 > s1_2) p1_sets++;
+                        else if (s1_2 > s1_1) p2_sets++;
+                        else {
+                            if ((sv1_1 || 0) > (sv1_2 || 0)) p1_sets++;
+                            else if ((sv1_2 || 0) > (sv1_1 || 0)) p2_sets++;
+                        }
+                    }
+
+                    if (s2_1 !== null && s2_2 !== null) {
+                        if (s2_1 > s2_2) p1_sets++;
+                        else if (s2_2 > s2_1) p2_sets++;
+                        else {
+                            if ((sv2_1 || 0) > (sv2_2 || 0)) p1_sets++;
+                            else if ((sv2_2 || 0) > (sv2_1 || 0)) p2_sets++;
+                        }
+                    }
+
+                    // MSV (Meccs hirtelen halál)
+                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
+                    renderExtraBox(`${mId}_p1_msv`, msv1);
+                    renderExtraBox(`${mId}_p2_msv`, msv2);
+
+                    if (p1_sets === 1 && p2_sets === 1) {
+                        if ((msv1 || 0) > (msv2 || 0)) p1_sets++;
+                        else if ((msv2 || 0) > (msv1 || 0)) p2_sets++;
+                    }
+
+                    // Szettpontok kiírása
+                    document.getElementById(`${mId}_p1_sets`).textContent = p1_sets;
+                    document.getElementById(`${mId}_p2_sets`).textContent = p2_sets;
+
+                    // Győztes kiemelése
+                    const p1Row = document.getElementById(`${mId}_p1_row`);
+                    const p2Row = document.getElementById(`${mId}_p2_row`);
+
+                    p1Row.classList.remove('winner');
+                    p2Row.classList.remove('winner');
+
+                    if (p1_sets > p2_sets) {
+                        p1Row.classList.add('winner');
+                    } else if (p2_sets > p1_sets) {
+                        p2Row.classList.add('winner');
+                    }
+                }
+            });
+        }
+
+        function renderExtraBox(id, val) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            if (val !== null && val !== undefined) {
+                el.textContent = val;
+                el.style.display = 'inline-block';
+            } else {
+                el.textContent = '';
+                el.style.display = 'none';
+            }
+        }
+
+        initBracket();
+        listenToFirebase();
+    </script>
 </body>
 </html>
