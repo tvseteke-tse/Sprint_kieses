@@ -204,16 +204,15 @@
             25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
         };
 
-        // Automatikus időpont generálás: 09:00-tól kezdve, 2 meccsenként +30 perc
         function generateDefaultTimes() {
             const times = {};
-            let currentMinutes = 9 * 60; // 09:00 percekben
+            let currentMinutes = 9 * 60;
             for (let m = 1; m <= 31; m++) {
                 const hours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
                 const mins = (currentMinutes % 60).toString().padStart(2, '0');
                 times[m] = `${hours}:${mins}`;
                 if (m % 2 === 0) {
-                    currentMinutes += 30; // Minden 2. meccs után 30 percet ugrik
+                    currentMinutes += 30;
                 }
             }
             return times;
@@ -453,49 +452,83 @@
             toggleInput(`${mId}_p2_sv2`, sv2Active);
 
             let p1_sets = 0, p2_sets = 0;
+            let s1Finished = false, s2Finished = false;
 
+            // 1. Szett értékelése
             if (s1_1 !== null && s1_2 !== null) {
-                if (s1_1 > s1_2) p1_sets++;
-                else if (s1_2 > s1_1) p2_sets++;
-                else {
-                    const sv1_1 = getVal('p1_sv1') || 0, sv1_2 = getVal('p2_sv1') || 0;
-                    if (sv1_1 > sv1_2) p1_sets++;
-                    else if (sv1_2 > sv1_1) p2_sets++;
+                if (s1_1 > s1_2) {
+                    p1_sets++;
+                    s1Finished = true;
+                } else if (s1_2 > s1_1) {
+                    p2_sets++;
+                    s1Finished = true;
+                } else {
+                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
+                    if (sv1_1 !== null && sv1_2 !== null && sv1_1 !== sv1_2) {
+                        if (sv1_1 > sv1_2) p1_sets++;
+                        else p2_sets++;
+                        s1Finished = true;
+                    }
                 }
             }
 
+            // 2. Szett értékelése
             if (s2_1 !== null && s2_2 !== null) {
-                if (s2_1 > s2_2) p1_sets++;
-                else if (s2_2 > s2_1) p2_sets++;
-                else {
-                    const sv2_1 = getVal('p1_sv2') || 0, sv2_2 = getVal('p2_sv2') || 0;
-                    if (sv2_1 > sv2_2) p1_sets++;
-                    else if (sv2_2 > sv2_1) p2_sets++;
+                if (s2_1 > s2_2) {
+                    p1_sets++;
+                    s2Finished = true;
+                } else if (s2_2 > s2_1) {
+                    p2_sets++;
+                    s2Finished = true;
+                } else {
+                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
+                    if (sv2_1 !== null && sv2_2 !== null && sv2_1 !== sv2_2) {
+                        if (sv2_1 > sv2_2) p1_sets++;
+                        else p2_sets++;
+                        s2Finished = true;
+                    }
                 }
             }
 
-            const msvActive = (p1_sets === 1 && p2_sets === 1);
+            const msvActive = (s1Finished && s2Finished && p1_sets === 1 && p2_sets === 1);
             toggleInput(`${mId}_p1_msv`, msvActive);
             toggleInput(`${mId}_p2_msv`, msvActive);
 
-            if (msvActive) {
-                const msv1 = getVal('p1_msv') || 0, msv2 = getVal('p2_msv') || 0;
-                if (msv1 > msv2) p1_sets++;
-                else if (msv2 > msv1) p2_sets++;
+            let winner = null;
+            let matchFinished = false;
+
+            // Csak akkor tekintjük befejezettnek a meccset, ha mindkét szett lefutott
+            if (s1Finished && s2Finished) {
+                if (p1_sets === 2) {
+                    winner = 1;
+                    matchFinished = true;
+                } else if (p2_sets === 2) {
+                    winner = 2;
+                    matchFinished = true;
+                } else if (msvActive) {
+                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
+                    if (msv1 !== null && msv2 !== null && msv1 !== msv2) {
+                        if (msv1 > msv2) winner = 1;
+                        else winner = 2;
+                        matchFinished = true;
+                    }
+                }
             }
 
-            let winner = null;
-            if (p1_sets > p2_sets) winner = 1;
-            else if (p2_sets > p1_sets) winner = 2;
+            const matchNum = parseInt(mId.replace('m_', ''), 10);
+            const nextStep = progressionMap[matchNum];
 
-            if (winner) {
-                const winnerName = winner === 1 ? d.p1_name : d.p2_name;
-                const matchNum = parseInt(mId.replace('m_', ''), 10);
-                const nextStep = progressionMap[matchNum];
-
-                if (nextStep && winnerName) {
-                    const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
-                    db.ref(targetPath).transaction(currentVal => winnerName);
+            if (nextStep) {
+                const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
+                
+                if (matchFinished && winner) {
+                    const winnerName = winner === 1 ? d.p1_name : d.p2_name;
+                    if (winnerName) {
+                        db.ref(targetPath).transaction(currentVal => winnerName);
+                    }
+                } else {
+                    // Ha a meccs még nem fejeződött be, a következő körben a mező üres marad
+                    db.ref(targetPath).transaction(currentVal => '');
                 }
             }
         }
