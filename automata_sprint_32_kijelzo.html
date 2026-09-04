@@ -92,7 +92,7 @@
         .round-column {
             display: none; /* Alapértelmezetten rejtve, JS váltja */
             width: 100%;
-            max-width: 900px;
+            max-width: 950px;
             margin: 0 auto;
             flex-direction: column;
         }
@@ -103,7 +103,7 @@
 
         .matches-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
             gap: 12px;
         }
 
@@ -159,6 +159,22 @@
             display: flex;
             align-items: center;
             gap: 4px;
+        }
+
+        /* Oszlop/Mező konténer a feliratoknak */
+        .score-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-label {
+            font-size: 0.55rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 2px;
+            line-height: 1;
         }
 
         .score-box {
@@ -289,13 +305,34 @@
                             <div class="p-row" id="${mId}_p1_row">
                                 <span class="p-name" id="${mId}_p1_name">-</span>
                                 <div class="p-scores">
-                                    <span class="score-box" id="${mId}_p1_s1">-</span>
-                                    <span class="score-box sv-box" id="${mId}_p1_sv1"></span>
-                                    <span class="score-box" id="${mId}_p1_s2">-</span>
-                                    <span class="score-box sv-box" id="${mId}_p1_sv2"></span>
-                                    <span class="score-box msv-box" id="${mId}_p1_msv"></span>
-                                    <span class="score-box of-box" id="${mId}_p1_of" title="Összes fa">-</span>
-                                    <span class="set-total" id="${mId}_p1_sets">0</span>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p1_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p1_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p1_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p1_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p1_sets">0</span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -303,13 +340,34 @@
                             <div class="p-row" id="${mId}_p2_row">
                                 <span class="p-name" id="${mId}_p2_name">-</span>
                                 <div class="p-scores">
-                                    <span class="score-box" id="${mId}_p2_s1">-</span>
-                                    <span class="score-box sv-box" id="${mId}_p2_sv1"></span>
-                                    <span class="score-box" id="${mId}_p2_s2">-</span>
-                                    <span class="score-box sv-box" id="${mId}_p2_sv2"></span>
-                                    <span class="score-box msv-box" id="${mId}_p2_msv"></span>
-                                    <span class="score-box of-box" id="${mId}_p2_of" title="Összes fa">-</span>
-                                    <span class="set-total" id="${mId}_p2_sets">0</span>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p2_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p2_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p2_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p2_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p2_sets">0</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -447,13 +505,17 @@
 
         function renderExtraBox(id, val) {
             const el = document.getElementById(id);
+            const col = document.getElementById(`${id}_col`);
             if (!el) return;
+            
             if (val !== null && val !== undefined) {
                 el.textContent = val;
-                el.style.display = 'inline-block';
+                if (col) col.style.display = 'flex';
+                else el.style.display = 'inline-block';
             } else {
                 el.textContent = '';
-                el.style.display = 'none';
+                if (col) col.style.display = 'none';
+                else el.style.display = 'none';
             }
         }
 
