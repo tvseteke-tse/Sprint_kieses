@@ -1,548 +1,205 @@
 <!DOCTYPE html>
 <html lang="hu">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna Admin - 32 Fő</title>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <style>
-        :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --accent: #38bdf8;
-            --text: #f8fafc;
-            --border: #334155;
-            --gold: #f59e0b;
-            --green: #10b981;
-            --danger: #ef4444;
-            --danger-hover: #dc2626;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teke Torna Kijelző</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #38bdf8;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --active-tab: #2563eb;
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text); padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
 
-        #status-bar {
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            font-weight: bold;
-            text-align: center;
-            background: #334155;
-            color: #f8fafc;
-        }
-        .status-success { background: #15803d !important; color: #fff !important; }
-        .status-error { background: #b91c1c !important; color: #fff !important; }
+    header { text-align: center; margin-bottom: 20px; }
+    h1 { font-size: 2.2rem; color: var(--accent); letter-spacing: 1px; }
 
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); gap: 15px; flex-wrap: wrap; }
-        .header-title-input {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--accent);
-            font-size: 1.4rem;
-            font-weight: bold;
-            flex: 1;
-            min-width: 250px;
-            outline: none;
-            border-radius: 4px;
-            padding: 4px 8px;
-        }
-        .header-title-input:focus { background: #0f172a; border-color: var(--border); }
+    /* Körök / Fülek sávja */
+    .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; }
+    .tab-btn {
+      background-color: var(--card-bg);
+      color: var(--subtext);
+      border: 2px solid #334155;
+      padding: 10px 22px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+    .tab-btn.active { background-color: var(--active-tab); color: #fff; border-color: var(--accent); box-shadow: 0 0 12px rgba(56, 189, 248, 0.4); }
 
-        .header-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
+    /* Párok / Pályák ráácsa */
+    .matches-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; width: 100%; max-width: 1200px; }
 
-        .btn-import {
-            background: var(--green);
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.2s;
-        }
-        .btn-import:hover { background: #059669; }
+    /* Mérkőzés kártya */
+    .match-card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+    .lane-header { font-size: 0.9rem; font-weight: bold; color: var(--accent); text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid #334155; padding-bottom: 6px; }
 
-        .btn-reset {
-            background: var(--danger);
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: background 0.2s;
-        }
-        .btn-reset:hover { background: var(--danger-hover); }
+    .player-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #334155; }
+    .player-row:last-child { border-bottom: none; }
 
-        .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; overflow-x: auto; }
-        .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
-        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+    .player-info { display: flex; flex-direction: column; }
+    .player-name { font-size: 1.2rem; font-weight: 600; }
+    .player-team { font-size: 0.85rem; color: var(--subtext); }
 
-        .content-area { flex-grow: 1; }
-        .round-pane { display: none; }
-        .round-pane.active { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
+    .score-box { font-size: 2rem; font-weight: bold; color: #f59e0b; font-family: monospace; }
+    
+    .no-data { text-align: center; color: var(--subtext); font-style: italic; width: 100%; margin-top: 40px; }
+  </style>
 
-        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .match-header { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 4px; }
+  <!-- Firebase v9 SDK SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+    // FIXME: Cseréld ki a saját Firebase konfigurációdra!
+    const firebaseConfig = {
+      apiKey: "PÉLDA_API_KEY",
+      authDomain: "projekt-id.firebaseapp.com",
+      databaseURL: "https://projekt-id-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "projekt-id",
+      storageBucket: "projekt-id.appspot.com",
+      messagingSenderId: "123456789",
+      appId: "1:123456789:web:abcdef"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    let currentData = null;
+    let selectedRound = "kor_1"; // Alapértelmezett kör
+
+    const tabsContainer = document.getElementById("tabs");
+    const matchesGrid = document.getElementById("matchesGrid");
+
+    // Firebase adatok valós idejű figyelése
+    const tornaRef = ref(db, 'torna');
+    onValue(tornaRef, (snapshot) => {
+      currentData = snapshot.val();
+      if (currentData) {
+        renderTabs();
+        renderMatches();
+      } else {
+        matchesGrid.innerHTML = '<div class="no-data">Nincs elérhető adatsor az adatbázisban.</div>';
+      }
+    });
+
+    // Fülek (Körök) kirajzolása
+    function renderTabs() {
+      tabsContainer.innerHTML = '';
+      const rounds = Object.keys(currentData);
+
+      if (rounds.length === 0) return;
+
+      // Ha a kiválasztott kör már nem létezik, átállunk az elsőre
+      if (!currentData[selectedRound]) {
+        selectedRound = rounds[0];
+      }
+
+      rounds.forEach((roundKey) => {
+        const btn = document.createElement('button');
+        btn.className = `tab-btn ${roundKey === selectedRound ? 'active' : ''}`;
         
-        .p-row { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px; margin: 6px 0; border-radius: 6px; }
+        // Formázott név pl. "kor_1" -> "1. KÖR"
+        const label = roundKey.replace('kor_', '') + '. KÖR';
+        btn.textContent = label;
 
-        .admin-input {
-            background: #334155;
-            border: 1px solid #475569;
-            color: #ffffff;
-            padding: 6px;
-            border-radius: 4px;
-            font-weight: bold;
-            font-size: 0.85rem;
-            display: inline-block;
-        }
-        .admin-input:focus { border-color: var(--accent); outline: none; }
+        btn.onclick = () => {
+          selectedRound = roundKey;
+          renderTabs();
+          renderMatches();
+        };
 
-        .input-readonly { background: #1e293b; color: #94a3b8; border-color: #334155; cursor: not-allowed; }
-        .input-disabled { background: #0f172a; color: #475569; border-color: #1e293b; cursor: not-allowed; opacity: 0.4; }
+        tabsContainer.appendChild(btn);
+      });
+    }
 
-        .input-name { flex: 1; min-width: 110px; }
-        .input-num { width: 45px; text-align: center; }
-        .input-sv { width: 45px; text-align: center; border-color: var(--gold); color: var(--gold); }
-        .input-meta { width: 70px; text-align: center; color: var(--accent); }
-    </style>
+    // Pályák / Mérkőzések kirajzolása a kiválasztott körhöz
+    function renderMatches() {
+      matchesGrid.innerHTML = '';
+      const roundData = currentData[selectedRound];
+
+      if (!roundData) {
+        matchesGrid.innerHTML = '<div class="no-data">Ebből a körből még nincsenek adatok.</div>';
+        return;
+      }
+
+      // Végigmegyünk a körhöz tartozó meccseken / pályákon
+      Object.keys(roundData).forEach((matchKey, index) => {
+        const match = roundData[matchKey];
+
+        const card = document.createElement('div');
+        card.className = 'match-card';
+
+        // Csak akkor írjuk ki a nevet, ha tényleg létezik és nem üres string
+        const p1Name = (match.player1 && match.player1.name && match.player1.name.trim() !== '') 
+          ? match.player1.name 
+          : '—';
+        const p1Team = match.player1?.team || '';
+        const p1Score = match.player1?.score ?? 0;
+
+        const p2Name = (match.player2 && match.player2.name && match.player2.name.trim() !== '') 
+          ? match.player2.name 
+          : '—';
+        const p2Team = match.player2?.team || '';
+        const p2Score = match.player2?.score ?? 0;
+
+        card.innerHTML = `
+          <div class="lane-header">Pálya / Pár #${index + 1}</div>
+          <div class="player-row">
+            <div class="player-info">
+              <span class="player-name">${escapeHtml(p1Name)}</span>
+              ${p1Team ? `<span class="player-team">${escapeHtml(p1Team)}</span>` : ''}
+            </div>
+            <div class="score-box">${p1Score}</div>
+          </div>
+          <div class="player-row">
+            <div class="player-info">
+              <span class="player-name">${escapeHtml(p2Name)}</span>
+              ${p2Team ? `<span class="player-team">${escapeHtml(p2Team)}</span>` : ''}
+            </div>
+            <div class="score-box">${p2Score}</div>
+          </div>
+        `;
+
+        matchesGrid.appendChild(card);
+      });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+  </script>
 </head>
 <body>
 
-    <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
+  <header>
+    <h1>VERSENY KIJELZŐ</h1>
+  </header>
 
-    <div class="header">
-        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 32 Fő" onchange="saveTitle(this.value)">
-        <div class="header-actions">
-            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből</button>
-            <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
-        </div>
-    </div>
+  <!-- Körök fülei -->
+  <div class="tabs-container" id="tabs"></div>
 
-    <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(0)">16 Közé Jutás</button>
-        <button class="tab-btn" onclick="switchTab(1)">Nyolcaddöntő</button>
-        <button class="tab-btn" onclick="switchTab(2)">Negyeddöntő</button>
-        <button class="tab-btn" onclick="switchTab(3)">Elődöntő</button>
-        <button class="tab-btn" onclick="switchTab(4)">Döntő</button>
-    </div>
+  <!-- Kiválasztott kör eredményei -->
+  <div class="matches-grid" id="matchesGrid">
+    <div class="no-data">Adatok betöltése...</div>
+  </div>
 
-    <div class="content-area" id="panes-container"></div>
-
-    <script>
-        function showStatus(msg, isError = false) {
-            const sb = document.getElementById('status-bar');
-            sb.textContent = msg;
-            sb.className = isError ? 'status-error' : 'status-success';
-        }
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
-            authDomain: "teke-eredmenyek.firebaseapp.com",
-            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
-            projectId: "teke-eredmenyek",
-            storageBucket: "teke-eredmenyek.firebasestorage.app"
-        };
-        
-        let db = null;
-        try {
-            firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
-            showStatus("Firebase csatlakozva. Adatok betöltése...");
-        } catch (e) {
-            showStatus("Firebase indítási hiba: " + e.message, true);
-        }
-
-        const progressionMap = {
-            1:  { targetMatch: 18, targetPos: 'p1' },
-            2:  { targetMatch: 17, targetPos: 'p1' },
-            3:  { targetMatch: 18, targetPos: 'p2' },
-            4:  { targetMatch: 17, targetPos: 'p2' },
-            5:  { targetMatch: 20, targetPos: 'p1' },
-            6:  { targetMatch: 19, targetPos: 'p1' },
-            7:  { targetMatch: 20, targetPos: 'p2' },
-            8:  { targetMatch: 19, targetPos: 'p2' },
-            9:  { targetMatch: 22, targetPos: 'p1' },
-            10: { targetMatch: 21, targetPos: 'p1' },
-            11: { targetMatch: 22, targetPos: 'p2' },
-            12: { targetMatch: 21, targetPos: 'p2' },
-            13: { targetMatch: 24, targetPos: 'p1' },
-            14: { targetMatch: 23, targetPos: 'p1' },
-            15: { targetMatch: 24, targetPos: 'p2' },
-            16: { targetMatch: 23, targetPos: 'p2' },
-
-            17: { targetMatch: 26, targetPos: 'p2' },
-            18: { targetMatch: 25, targetPos: 'p1' },
-            19: { targetMatch: 26, targetPos: 'p1' },
-            20: { targetMatch: 25, targetPos: 'p2' },
-            21: { targetMatch: 28, targetPos: 'p2' },
-            22: { targetMatch: 27, targetPos: 'p1' },
-            23: { targetMatch: 28, targetPos: 'p1' },
-            24: { targetMatch: 27, targetPos: 'p2' },
-
-            25: { targetMatch: 30, targetPos: 'p2' },
-            26: { targetMatch: 29, targetPos: 'p2' },
-            27: { targetMatch: 30, targetPos: 'p1' },
-            28: { targetMatch: 29, targetPos: 'p1' },
-
-            29: { targetMatch: 31, targetPos: 'p2' },
-            30: { targetMatch: 31, targetPos: 'p1' }
-        };
-
-        const defaultLanes = {
-            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
-            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
-            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
-            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
-        };
-
-        function generateDefaultTimes() {
-            const times = {};
-            let currentMinutes = 9 * 60;
-            for (let m = 1; m <= 31; m++) {
-                const hours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
-                const mins = (currentMinutes % 60).toString().padStart(2, '0');
-                times[m] = `${hours}:${mins}`;
-                if (m % 2 === 0) {
-                    currentMinutes += 30;
-                }
-            }
-            return times;
-        }
-
-        const defaultTimes = generateDefaultTimes();
-
-        function switchTab(idx) {
-            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-            document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
-        }
-
-        function initDOM() {
-            const container = document.getElementById('panes-container');
-            container.innerHTML = '';
-            
-            const rounds = [
-                { name: '16 Közé Jutás', count: 16 },
-                { name: 'Nyolcaddöntő', count: 8 },
-                { name: 'Negyeddöntő', count: 4 },
-                { name: 'Elődöntő', count: 2 },
-                { name: 'Döntő', count: 1 }
-            ];
-
-            let matchNum = 1;
-
-            rounds.forEach((round, rIdx) => {
-                const paneDiv = document.createElement('div');
-                paneDiv.className = `round-pane ${rIdx === 0 ? 'active' : ''}`;
-                paneDiv.id = `pane_${rIdx}`;
-
-                for (let i = 0; i < round.count; i++) {
-                    const m = matchNum;
-                    const mId = `m_${m}`;
-
-                    const nameAttr = 'readonly class="admin-input input-name input-readonly"';
-
-                    paneDiv.innerHTML += `
-                        <div class="match-card">
-                            <div class="match-header">
-                                <span>Meccs #${m}</span>
-                                <div>
-                                    Pálya: <input type="text" id="${mId}_lanes" class="admin-input input-meta input-readonly" readonly onchange="updateDB('${mId}', 'lanes', this.value)">
-                                    Idő: <input type="text" id="${mId}_time" class="admin-input input-meta input-readonly" readonly>
-                                </div>
-                            </div>
-                            <div class="p-row">
-                                <input type="text" id="${mId}_p1_name" ${nameAttr} placeholder="Játékos 1">
-                                <input type="number" id="${mId}_p1_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p1_s1', this.value)">
-                                <input type="number" id="${mId}_p1_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p1_sv1', this.value)">
-                                <input type="number" id="${mId}_p1_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p1_s2', this.value)">
-                                <input type="number" id="${mId}_p1_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p1_sv2', this.value)">
-                                <input type="number" id="${mId}_p1_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p1_msv', this.value)">
-                            </div>
-                            <div class="p-row">
-                                <input type="text" id="${mId}_p2_name" ${nameAttr} placeholder="Játékos 2">
-                                <input type="number" id="${mId}_p2_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p2_s1', this.value)">
-                                <input type="number" id="${mId}_p2_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p2_sv1', this.value)">
-                                <input type="number" id="${mId}_p2_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p2_s2', this.value)">
-                                <input type="number" id="${mId}_p2_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p2_sv2', this.value)">
-                                <input type="number" id="${mId}_p2_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p2_msv', this.value)">
-                            </div>
-                        </div>
-                    `;
-                    matchNum++;
-                }
-                container.appendChild(paneDiv);
-            });
-        }
-
-        function importFromEgyeni32() {
-            if (!db) return;
-            if (!confirm("Biztosan be szeretnéd importálni az Egyéni 32 versenyzőit? Ez felülírja a jelenlegi neveket!")) return;
-
-            db.ref('egyeni_bowling/players').once('value').then(snapshot => {
-                const playersData = snapshot.val();
-                if (!playersData) {
-                    showStatus("Nem találhatók játékosok az egyeni_bowling/players ágon!", true);
-                    return;
-                }
-
-                let list = Array.isArray(playersData) ? playersData : Object.values(playersData);
-                
-                let playerNames = list.map(p => {
-                    if (typeof p === 'string') return p;
-                    return p.name || p.nev || p.player_name || '-';
-                }).filter(n => n !== '-');
-
-                if (playerNames.length < 32) {
-                    showStatus(`Csak ${playerNames.length} játékos található! A 32-es táblához 32 játékos szükséges.`, true);
-                    return;
-                }
-
-                const matchups = [
-                    { m: 'm_1',  p1: 28, p2: 3  },
-                    { m: 'm_2',  p1: 2,  p2: 29 },
-                    { m: 'm_3',  p1: 12, p2: 19 },
-                    { m: 'm_4',  p1: 18, p2: 13 },
-                    { m: 'm_5',  p1: 4,  p2: 27 },
-                    { m: 'm_6',  p1: 26, p2: 5  },
-                    { m: 'm_7',  p1: 20, p2: 11 },
-                    { m: 'm_8',  p1: 10, p2: 21 },
-                    { m: 'm_9',  p1: 8,  p2: 23 },
-                    { m: 'm_10', p1: 22, p2: 9  },
-                    { m: 'm_11', p1: 27, p2: 7  },
-                    { m: 'm_12', p1: 6,  p2: 25 },
-                    { m: 'm_13', p1: 16, p2: 15 },
-                    { m: 'm_14', p1: 14, p2: 17 },
-                    { m: 'm_15', p1: 31, p2: 0  },
-                    { m: 'm_16', p1: 30, p2: 1  }
-                ];
-
-                let updates = {};
-                matchups.forEach(match => {
-                    updates[`torna_32/${match.m}/p1_name`] = playerNames[match.p1];
-                    updates[`torna_32/${match.m}/p2_name`] = playerNames[match.p2];
-                });
-
-                db.ref().update(updates, (error) => {
-                    if (error) {
-                        showStatus("Importálási hiba: " + error.message, true);
-                    } else {
-                        showStatus("32 játékos sikeresen beimportálva a megadott sorsolás szerint!");
-                    }
-                });
-            }).catch(err => {
-                showStatus("Hiba az adatok lekérésekor: " + err.message, true);
-            });
-        }
-
-        function resetTournamentData() {
-            if (!db) return;
-            const confirm1 = confirm("Biztosan törölni szeretnéd az ÖSSZES beírt eredményt és játékost?");
-            if (!confirm1) return;
-
-            const confirm2 = confirm("FIGYELEM: Ez a művelet végleges és azonnal töröl mindent a Firebase torna_32 ágáról! Biztosan folytatod?");
-            if (!confirm2) return;
-
-            db.ref('torna_32').remove()
-                .then(() => {
-                    showStatus("Az adatbázis sikeresen kiürítve!");
-                    document.querySelectorAll('input').forEach(input => {
-                        if (input.id !== 'admin_title') input.value = '';
-                    });
-                })
-                .catch(error => {
-                    showStatus("Hiba történt a törlés során: " + error.message, true);
-                });
-        }
-
-        function updateDB(mId, key, val) {
-            if (!db) return;
-            const isNum = key.includes('_s') || key.includes('_sv') || key.includes('_msv');
-            let parsedVal = val;
-            
-            if (isNum) {
-                if (val === '') {
-                    parsedVal = '';
-                } else {
-                    parsedVal = parseInt(val, 10);
-                    if (key.endsWith('_s1') || key.endsWith('_s2')) {
-                        if (parsedVal > 180) {
-                            alert("A szett eredménye maximum 180 lehet!");
-                            document.getElementById(`${mId}_${key}`).value = '';
-                            parsedVal = '';
-                        }
-                    }
-                }
-            }
-
-            db.ref(`torna_32/${mId}/${key}`).set(parsedVal, (error) => {
-                if (error) showStatus("Mentési Hiba: " + error.message, true);
-                else showStatus("Adat sikeresen mentve!");
-            });
-        }
-
-        function saveTitle(val) {
-            if (!db) return;
-            db.ref('torna_32/title').set(val, (error) => {
-                if (error) showStatus("Cím mentési hiba: " + error.message, true);
-                else showStatus("Cím elmentve!");
-            });
-        }
-
-        function syncUI() {
-            if (!db) return;
-            db.ref('torna_32').on('value', snap => {
-                showStatus("Adatok szinkronizálva (Firebase OK)");
-                const data = snap.val() || {};
-
-                const titleEl = document.getElementById('admin_title');
-                if (titleEl && document.activeElement !== titleEl) {
-                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 32 Fő';
-                }
-
-                for (let m = 1; m <= 31; m++) {
-                    const mId = `m_${m}`;
-                    const mData = data[mId] || {};
-
-                    const fields = [
-                        'p1_name', 'p2_name', 'p1_s1', 'p2_s1', 'p1_sv1', 'p2_sv1',
-                        'p1_s2', 'p2_s2', 'p1_sv2', 'p2_sv2', 'p1_msv', 'p2_msv', 'lanes', 'time'
-                    ];
-
-                    fields.forEach(f => {
-                        const el = document.getElementById(`${mId}_${f}`);
-                        if (el && document.activeElement !== el) {
-                            let val = mData[f];
-                            if (val === undefined || val === null) {
-                                if (f === 'lanes') val = defaultLanes[m] || '';
-                                else if (f === 'time') val = defaultTimes[m] || '';
-                                else val = '';
-                            }
-                            el.value = val;
-                        }
-                    });
-
-                    processMatchRules(mId, mData);
-                }
-            }, error => {
-                showStatus("Olvasási Hiba: " + error.message, true);
-            });
-        }
-
-        function processMatchRules(mId, d) {
-            const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
-
-            const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
-            const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
-
-            const sv1Active = (s1_1 !== null && s1_2 !== null && s1_1 === s1_2 && s1_1 > 0);
-            toggleInput(`${mId}_p1_sv1`, sv1Active);
-            toggleInput(`${mId}_p2_sv1`, sv1Active);
-
-            const sv2Active = (s2_1 !== null && s2_2 !== null && s2_1 === s2_2 && s2_1 > 0);
-            toggleInput(`${mId}_p1_sv2`, sv2Active);
-            toggleInput(`${mId}_p2_sv2`, sv2Active);
-
-            let p1_sets = 0, p2_sets = 0;
-            let s1Finished = false, s2Finished = false;
-
-            // 1. Szett értékelése
-            if (s1_1 !== null && s1_2 !== null) {
-                if (s1_1 > s1_2) {
-                    p1_sets++;
-                    s1Finished = true;
-                } else if (s1_2 > s1_1) {
-                    p2_sets++;
-                    s1Finished = true;
-                } else {
-                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
-                    if (sv1_1 !== null && sv1_2 !== null && sv1_1 !== sv1_2) {
-                        if (sv1_1 > sv1_2) p1_sets++;
-                        else p2_sets++;
-                        s1Finished = true;
-                    }
-                }
-            }
-
-            // 2. Szett értékelése
-            if (s2_1 !== null && s2_2 !== null) {
-                if (s2_1 > s2_2) {
-                    p1_sets++;
-                    s2Finished = true;
-                } else if (s2_2 > s2_1) {
-                    p2_sets++;
-                    s2Finished = true;
-                } else {
-                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
-                    if (sv2_1 !== null && sv2_2 !== null && sv2_1 !== sv2_2) {
-                        if (sv2_1 > sv2_2) p1_sets++;
-                        else p2_sets++;
-                        s2Finished = true;
-                    }
-                }
-            }
-
-            const msvActive = (s1Finished && s2Finished && p1_sets === 1 && p2_sets === 1);
-            toggleInput(`${mId}_p1_msv`, msvActive);
-            toggleInput(`${mId}_p2_msv`, msvActive);
-
-            let winner = null;
-            let matchFinished = false;
-
-            // Csak akkor tekintjük befejezettnek a meccset, ha mindkét szett lefutott
-            if (s1Finished && s2Finished) {
-                if (p1_sets === 2) {
-                    winner = 1;
-                    matchFinished = true;
-                } else if (p2_sets === 2) {
-                    winner = 2;
-                    matchFinished = true;
-                } else if (msvActive) {
-                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
-                    if (msv1 !== null && msv2 !== null && msv1 !== msv2) {
-                        if (msv1 > msv2) winner = 1;
-                        else winner = 2;
-                        matchFinished = true;
-                    }
-                }
-            }
-
-            const matchNum = parseInt(mId.replace('m_', ''), 10);
-            const nextStep = progressionMap[matchNum];
-
-            if (nextStep) {
-                const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
-                
-                if (matchFinished && winner) {
-                    const winnerName = winner === 1 ? d.p1_name : d.p2_name;
-                    if (winnerName) {
-                        db.ref(targetPath).transaction(currentVal => winnerName);
-                    }
-                } else {
-                    // Ha a meccs még nem fejeződött be, a következő körben a mező üres marad
-                    db.ref(targetPath).transaction(currentVal => '');
-                }
-            }
-        }
-
-        function toggleInput(id, enable) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.disabled = !enable;
-            if (enable) el.classList.remove('input-disabled');
-            else el.classList.add('input-disabled');
-        }
-
-        initDOM();
-        syncUI();
-    </script>
 </body>
 </html>
