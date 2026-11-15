@@ -2,8 +2,8 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna Kijelző - 32 Fő</title>
+    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0">
+    <title>Sprint Torna Kijelző - 32 Fő (1920x1080)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -25,24 +25,26 @@
         body { 
             background-color: var(--bg); 
             color: var(--text); 
-            padding: 10px; 
-            min-height: 100vh;
+            padding: 8px 12px; 
+            width: 1920px;
+            height: 1080px;
+            overflow: hidden; /* Fix 1080p kijelzőre szabva, nincs felesleges görgetés */
             display: flex;
             flex-direction: column;
         }
 
         .tournament-header {
             text-align: center;
-            padding: 10px;
+            padding: 6px;
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 8px;
-            margin-bottom: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
         }
 
         .tournament-title {
-            font-size: 1.6rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--accent);
             text-transform: uppercase;
@@ -52,20 +54,19 @@
         /* Fülek (Tabs) stílusa */
         .tabs-container {
             display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
+            gap: 6px;
+            margin-bottom: 8px;
             justify-content: center;
-            flex-wrap: wrap;
         }
 
         .tab-btn {
             background: var(--panel-header);
             color: var(--text-muted);
             border: 1px solid var(--border);
-            padding: 10px 16px;
-            border-radius: 6px;
+            padding: 6px 14px;
+            border-radius: 5px;
             font-weight: bold;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s ease;
             text-transform: uppercase;
@@ -90,7 +91,7 @@
         }
 
         .round-column {
-            display: none;
+            display: none; /* Alapértelmezetten rejtve, JS váltja */
             width: 100%;
             max-width: 950px;
             margin: 0 auto;
@@ -101,7 +102,7 @@
             display: flex;
         }
 
-        /* 16 közé jutás (r1) teljes szélességű beállítása a 4 oszlophoz */
+        /* 16 közé jutás fül fix 1920-as szélességre és 4 oszlopra hangolva */
         #round_r1 {
             max-width: 100%;
         }
@@ -109,49 +110,38 @@
         .matches-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-            gap: 12px;
-        }
-
-        /* 4 meccs egy sorban az r1 fülön */
-        #round_r1 .matches-grid {
-            grid-template-columns: repeat(4, 1fr);
             gap: 10px;
         }
 
-        @media (max-width: 1350px) {
-            #round_r1 .matches-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            #round_r1 .matches-grid,
-            .matches-grid {
-                grid-template-columns: 1fr;
-            }
+        #round_r1 .matches-grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
         }
 
         .match-card {
             background: var(--panel);
             border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 8px;
+            border-radius: 5px;
+            padding: 5px 8px;
             box-shadow: 0 2px 6px rgba(0,0,0,0.4);
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            transition: all 0.3s ease;
-            min-width: 0;
+            gap: 4px;
+        }
+
+        /* Speciálisan az r1 kártyái 1080p-hez optimalizálva */
+        #round_r1 .match-card {
+            padding: 4px 6px;
+            gap: 3px;
         }
 
         .match-header {
             display: flex;
             justify-content: space-between;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             color: var(--text-muted);
             border-bottom: 1px solid rgba(255,255,255,0.05);
-            padding-bottom: 4px;
-            margin-bottom: 2px;
+            padding-bottom: 2px;
             font-weight: bold;
         }
 
@@ -160,10 +150,13 @@
             align-items: center;
             justify-content: space-between;
             background: #0f172a;
-            padding: 6px 8px;
+            padding: 4px 6px;
             border-radius: 4px;
             border: 1px solid transparent;
-            min-width: 0;
+        }
+
+        #round_r1 .p-row {
+            padding: 3px 5px;
         }
 
         .p-row.winner {
@@ -172,3 +165,156 @@
         }
 
         .p-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+            padding-right: 4px;
+        }
+
+        #round_r1 .p-name {
+            font-size: 0.75rem;
+        }
+
+        .p-scores {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        /* Oszlop/Mező konténer a feliratoknak */
+        .score-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-label {
+            font-size: 0.5rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 1px;
+            line-height: 1;
+        }
+
+        .score-box {
+            font-size: 0.7rem;
+            font-weight: bold;
+            background: #1e293b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            min-width: 24px;
+            text-align: center;
+            color: #e2e8f0;
+        }
+
+        #round_r1 .score-box {
+            min-width: 22px;
+            padding: 1px 3px;
+            font-size: 0.68rem;
+        }
+
+        .sv-box {
+            color: var(--gold);
+            font-size: 0.65rem;
+        }
+
+        .msv-box {
+            color: #ef4444;
+            font-size: 0.65rem;
+            font-weight: 800;
+        }
+
+        /* Összes Fa (ÖF) cella stílusa */
+        .of-box {
+            background: #0284c7;
+            color: #ffffff;
+            font-size: 0.75rem;
+            font-weight: bold;
+            min-width: 32px;
+        }
+
+        #round_r1 .of-box {
+            min-width: 28px;
+            font-size: 0.7rem;
+        }
+
+        .set-total {
+            font-size: 0.78rem;
+            font-weight: 800;
+            background: #334155;
+            color: var(--accent);
+            padding: 2px 5px;
+            border-radius: 3px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        #round_r1 .set-total {
+            min-width: 20px;
+            padding: 1px 4px;
+            font-size: 0.72rem;
+        }
+
+        .winner .set-total {
+            background: var(--winner-border);
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tournament-header">
+        <div class="tournament-title" id="display_title">Sprint Torna - 32 Fő</div>
+    </div>
+
+    <!-- Körök váltógombjai (Fülek) -->
+    <div class="tabs-container" id="tabs_container"></div>
+
+    <!-- Meccsek konténere -->
+    <div class="bracket-container" id="bracket"></div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        // Pályabeosztás alapértelmezett értékek
+        const defaultLanes = {
+            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
+            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
+            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
+            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
+        };
+
+        const rounds = [
+            { id: 'r1', name: '16 Közé Jutás', count: 16 },
+            { id: 'r2', name: 'Nyolcaddöntő', count: 8 },
+            { id: 'r3', name: 'Negyeddöntő', count: 4 },
+            { id: 'r4', name: 'Elődöntő', count: 2 },
+            { id: 'r5', name: 'Döntő', count: 1 }
+        ];
+
+        function initBracket() {
+            const bracket = document.getElementById('bracket');
+            const tabsContainer = document.getElementById('tabs_container');
+            
+            bracket.innerHTML = '';
+            tabsContainer.innerHTML = '';
+
+            let matchNum = 1;
+
+            rounds.forEach((round, index) => {
+                // Fülek gombjainak létrehozása
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `tab-btn
