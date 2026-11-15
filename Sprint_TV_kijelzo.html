@@ -269,4 +269,288 @@
         const defaultLanes = {
             1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
             9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
-            17: '1-2', 18
+            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
+            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
+        };
+
+        const rounds = [
+            { id: 'r1', name: '16 Közé Jutás', count: 16 },
+            { id: 'r2', name: 'Nyolcaddöntő', count: 8 },
+            { id: 'r3', name: 'Negyeddöntő', count: 4 },
+            { id: 'r4', name: 'Elődöntő', count: 2 },
+            { id: 'r5', name: 'Döntő', count: 1 }
+        ];
+
+        function initBracket() {
+            const bracket = document.getElementById('bracket');
+            const tabsContainer = document.getElementById('tabs_container');
+            
+            if (!bracket || !tabsContainer) return;
+
+            bracket.innerHTML = '';
+            tabsContainer.innerHTML = '';
+
+            let matchNum = 1;
+
+            rounds.forEach((round, index) => {
+                const tabBtn = document.createElement('button');
+                tabBtn.className = `tab-btn ${index === 0 ? 'active' : ''}`;
+                tabBtn.textContent = round.name;
+                tabBtn.onclick = () => switchTab(round.id);
+                tabsContainer.appendChild(tabBtn);
+
+                const col = document.createElement('div');
+                col.className = `round-column ${index === 0 ? 'active' : ''}`;
+                col.id = `round_${round.id}`;
+
+                const grid = document.createElement('div');
+                grid.className = 'matches-grid';
+
+                for (let i = 0; i < round.count; i++) {
+                    const m = matchNum;
+                    const mId = `m_${m}`;
+
+                    grid.innerHTML += `
+                        <div class="match-card" id="card_${mId}">
+                            <div class="match-header">
+                                <span>#${m}</span>
+                                <span id="${mId}_info">Pál: ${defaultLanes[m] || '1-2'}</span>
+                            </div>
+                            
+                            <div class="p-row" id="${mId}_p1_row">
+                                <span class="p-name" id="${mId}_p1_name">-</span>
+                                <div class="p-scores">
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p1_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p1_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p1_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p1_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p1_sets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-row" id="${mId}_p2_row">
+                                <span class="p-name" id="${mId}_p2_name">-</span>
+                                <div class="p-scores">
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p2_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p2_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p2_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p2_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p2_sets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    matchNum++;
+                }
+
+                col.appendChild(grid);
+                bracket.appendChild(col);
+            });
+        }
+
+        function switchTab(roundId) {
+            const buttons = document.querySelectorAll('.tab-btn');
+            rounds.forEach((r, idx) => {
+                if (r.id === roundId) {
+                    if (buttons[idx]) buttons[idx].classList.add('active');
+                } else {
+                    if (buttons[idx]) buttons[idx].classList.remove('active');
+                }
+            });
+
+            const columns = document.querySelectorAll('.round-column');
+            columns.forEach(col => {
+                if (col.id === `round_${roundId}`) {
+                    col.classList.add('active');
+                } else {
+                    col.classList.remove('active');
+                }
+            });
+        }
+
+        function renderExtraBox(id, val) {
+            const el = document.getElementById(id);
+            const col = document.getElementById(`${id}_col`);
+            if (!el) return;
+            
+            if (val !== null && val !== undefined && val !== '') {
+                el.textContent = val;
+                if (col) col.style.display = 'flex';
+                else el.style.display = 'inline-block';
+            } else {
+                el.textContent = '';
+                if (col) col.style.display = 'none';
+                else el.style.display = 'none';
+            }
+        }
+
+        // 1. Felület építése azonnal betöltéskor
+        initBracket();
+
+        // 2. Firebase kapcsolat biztonságos inicializálással
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+                authDomain: "teke-eredmenyek.firebaseapp.com",
+                databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+                projectId: "teke-eredmenyek",
+                storageBucket: "teke-eredmenyek.firebasestorage.app"
+            };
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.database();
+
+            db.ref('torna_32').on('value', snap => {
+                const data = snap.val() || {};
+
+                const titleEl = document.getElementById('display_title');
+                if (data.title && titleEl) {
+                    titleEl.textContent = data.title;
+                }
+
+                for (let m = 1; m <= 31; m++) {
+                    const mId = `m_${m}`;
+                    const d = data[mId] || {};
+
+                    const lanes = d.lanes || defaultLanes[m] || '1-2';
+                    const time = d.time ? ` | ${d.time}` : '';
+                    const infoEl = document.getElementById(`${mId}_info`);
+                    if (infoEl) infoEl.textContent = `P: ${lanes}${time}`;
+
+                    const p1NameEl = document.getElementById(`${mId}_p1_name`);
+                    const p2NameEl = document.getElementById(`${mId}_p2_name`);
+                    if (p1NameEl) p1NameEl.textContent = d.p1_name || '-';
+                    if (p2NameEl) p2NameEl.textContent = d.p2_name || '-';
+
+                    const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
+
+                    const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
+                    const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
+
+                    const s1_1_el = document.getElementById(`${mId}_p1_s1`);
+                    const s2_1_el = document.getElementById(`${mId}_p2_s1`);
+                    const s1_2_el = document.getElementById(`${mId}_p1_s2`);
+                    const s2_2_el = document.getElementById(`${mId}_p2_s2`);
+
+                    if (s1_1_el) s1_1_el.textContent = s1_1 !== null ? s1_1 : '-';
+                    if (s2_1_el) s2_1_el.textContent = s1_2 !== null ? s1_2 : '-';
+                    if (s1_2_el) s1_2_el.textContent = s2_1 !== null ? s2_1 : '-';
+                    if (s2_2_el) s2_2_el.textContent = s2_2 !== null ? s2_2 : '-';
+
+                    const p1_of = (s1_1 !== null || s2_1 !== null) ? ((s1_1 || 0) + (s2_1 || 0)) : '-';
+                    const p2_of = (s1_2 !== null || s2_2 !== null) ? ((s1_2 || 0) + (s2_2 || 0)) : '-';
+
+                    const p1_of_el = document.getElementById(`${mId}_p1_of`);
+                    const p2_of_el = document.getElementById(`${mId}_p2_of`);
+                    if (p1_of_el) p1_of_el.textContent = p1_of;
+                    if (p2_of_el) p2_of_el.textContent = p2_of;
+
+                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
+                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
+
+                    renderExtraBox(`${mId}_p1_sv1`, sv1_1);
+                    renderExtraBox(`${mId}_p2_sv1`, sv1_2);
+                    renderExtraBox(`${mId}_p1_sv2`, sv2_1);
+                    renderExtraBox(`${mId}_p2_sv2`, sv2_2);
+
+                    let p1_sets = 0, p2_sets = 0;
+
+                    if (s1_1 !== null && s1_2 !== null) {
+                        if (s1_1 > s1_2) p1_sets++;
+                        else if (s1_2 > s1_1) p2_sets++;
+                        else {
+                            if ((sv1_1 || 0) > (sv1_2 || 0)) p1_sets++;
+                            else if ((sv1_2 || 0) > (sv1_1 || 0)) p2_sets++;
+                        }
+                    }
+
+                    if (s2_1 !== null && s2_2 !== null) {
+                        if (s2_1 > s2_2) p1_sets++;
+                        else if (s2_2 > s2_1) p2_sets++;
+                        else {
+                            if ((sv2_1 || 0) > (sv2_2 || 0)) p1_sets++;
+                            else if ((sv2_2 || 0) > (sv2_1 || 0)) p2_sets++;
+                        }
+                    }
+
+                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
+                    renderExtraBox(`${mId}_p1_msv`, msv1);
+                    renderExtraBox(`${mId}_p2_msv`, msv2);
+
+                    if (p1_sets === 1 && p2_sets === 1) {
+                        if ((msv1 || 0) > (msv2 || 0)) p1_sets++;
+                        else if ((msv2 || 0) > (msv1 || 0)) p2_sets++;
+                    }
+
+                    const p1_sets_el = document.getElementById(`${mId}_p1_sets`);
+                    const p2_sets_el = document.getElementById(`${mId}_p2_sets`);
+                    if (p1_sets_el) p1_sets_el.textContent = p1_sets;
+                    if (p2_sets_el) p2_sets_el.textContent = p2_sets;
+
+                    const p1Row = document.getElementById(`${mId}_p1_row`);
+                    const p2Row = document.getElementById(`${mId}_p2_row`);
+
+                    if (p1Row) p1Row.classList.remove('winner');
+                    if (p2Row) p2Row.classList.remove('winner');
+
+                    if (p1_sets > p2_sets) {
+                        if (p1Row) p1Row.classList.add('winner');
+                    } else if (p2_sets > p1_sets) {
+                        if (p2Row) p2Row.classList.add('winner');
+                    }
+                }
+            });
+        } catch (err) {
+            console.error("Hiba a Firebase kapcsolatban:", err);
+        }
+    </script>
+</body>
+</html>
