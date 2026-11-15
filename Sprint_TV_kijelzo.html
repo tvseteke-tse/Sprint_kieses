@@ -118,7 +118,7 @@
             gap: 10px;
         }
 
-        @media (max-width: 1450px) {
+        @media (max-width: 1350px) {
             #round_r1 .matches-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -166,4 +166,9 @@
             min-width: 0;
         }
 
-        .p-row
+        .p-row.winner {
+            background: var(--winner-bg);
+            border-color: var(--winner-border);
+        }
+
+        .p-name {
