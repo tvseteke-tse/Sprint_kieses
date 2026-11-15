@@ -2,8 +2,8 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0">
-    <title>Sprint Torna Kijelző - 32 Fő (1920x1080)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna Kijelző - 32 Fő</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -26,9 +26,9 @@
             background-color: var(--bg); 
             color: var(--text); 
             padding: 8px 12px; 
-            width: 1920px;
-            height: 1080px;
-            overflow: hidden; /* Fix 1080p kijelzőre szabva, nincs felesleges görgetés */
+            width: 100vw;
+            height: 100vh;
+            overflow-x: hidden;
             display: flex;
             flex-direction: column;
         }
@@ -51,7 +51,6 @@
             letter-spacing: 1px;
         }
 
-        /* Fülek (Tabs) stílusa */
         .tabs-container {
             display: flex;
             gap: 6px;
@@ -91,9 +90,8 @@
         }
 
         .round-column {
-            display: none; /* Alapértelmezetten rejtve, JS váltja */
+            display: none;
             width: 100%;
-            max-width: 950px;
             margin: 0 auto;
             flex-direction: column;
         }
@@ -102,20 +100,31 @@
             display: flex;
         }
 
-        /* 16 közé jutás fül fix 1920-as szélességre és 4 oszlopra hangolva */
-        #round_r1 {
-            max-width: 100%;
-        }
-
         .matches-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
-            gap: 10px;
+            gap: 8px;
         }
 
         #round_r1 .matches-grid {
             grid-template-columns: repeat(4, 1fr);
-            gap: 8px;
+        }
+
+        #round_r2 .matches-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        #round_r3 .matches-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        #round_r4 .matches-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        #round_r5 .matches-grid {
+            grid-template-columns: 1fr;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         .match-card {
@@ -127,12 +136,6 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
-        }
-
-        /* Speciálisan az r1 kártyái 1080p-hez optimalizálva */
-        #round_r1 .match-card {
-            padding: 4px 6px;
-            gap: 3px;
         }
 
         .match-header {
@@ -150,13 +153,9 @@
             align-items: center;
             justify-content: space-between;
             background: #0f172a;
-            padding: 4px 6px;
+            padding: 3px 5px;
             border-radius: 4px;
             border: 1px solid transparent;
-        }
-
-        #round_r1 .p-row {
-            padding: 3px 5px;
         }
 
         .p-row.winner {
@@ -165,7 +164,7 @@
         }
 
         .p-name {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             white-space: nowrap;
             overflow: hidden;
@@ -174,17 +173,12 @@
             padding-right: 4px;
         }
 
-        #round_r1 .p-name {
-            font-size: 0.75rem;
-        }
-
         .p-scores {
             display: flex;
             align-items: center;
             gap: 3px;
         }
 
-        /* Oszlop/Mező konténer a feliratoknak */
         .score-col {
             display: flex;
             flex-direction: column;
@@ -201,62 +195,41 @@
         }
 
         .score-box {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             font-weight: bold;
             background: #1e293b;
-            padding: 2px 4px;
+            padding: 1px 3px;
             border-radius: 3px;
-            min-width: 24px;
+            min-width: 22px;
             text-align: center;
             color: #e2e8f0;
         }
 
-        #round_r1 .score-box {
-            min-width: 22px;
-            padding: 1px 3px;
-            font-size: 0.68rem;
-        }
-
         .sv-box {
             color: var(--gold);
-            font-size: 0.65rem;
         }
 
         .msv-box {
             color: #ef4444;
-            font-size: 0.65rem;
             font-weight: 800;
         }
 
-        /* Összes Fa (ÖF) cella stílusa */
         .of-box {
             background: #0284c7;
             color: #ffffff;
-            font-size: 0.75rem;
-            font-weight: bold;
-            min-width: 32px;
-        }
-
-        #round_r1 .of-box {
-            min-width: 28px;
             font-size: 0.7rem;
+            min-width: 28px;
         }
 
         .set-total {
-            font-size: 0.78rem;
+            font-size: 0.72rem;
             font-weight: 800;
             background: #334155;
             color: var(--accent);
-            padding: 2px 5px;
-            border-radius: 3px;
-            min-width: 22px;
-            text-align: center;
-        }
-
-        #round_r1 .set-total {
-            min-width: 20px;
             padding: 1px 4px;
-            font-size: 0.72rem;
+            border-radius: 3px;
+            min-width: 20px;
+            text-align: center;
         }
 
         .winner .set-total {
@@ -271,25 +244,10 @@
         <div class="tournament-title" id="display_title">Sprint Torna - 32 Fő</div>
     </div>
 
-    <!-- Körök váltógombjai (Fülek) -->
     <div class="tabs-container" id="tabs_container"></div>
-
-    <!-- Meccsek konténere -->
     <div class="bracket-container" id="bracket"></div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
-            authDomain: "teke-eredmenyek.firebaseapp.com",
-            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
-            projectId: "teke-eredmenyek",
-            storageBucket: "teke-eredmenyek.firebasestorage.app"
-        };
-        
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        // Pályabeosztás alapértelmezett értékek
         const defaultLanes = {
             1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
             9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
@@ -315,6 +273,148 @@
             let matchNum = 1;
 
             rounds.forEach((round, index) => {
-                // Fülek gombjainak létrehozása
                 const tabBtn = document.createElement('button');
-                tabBtn.className = `tab-btn
+                tabBtn.className = `tab-btn ${index === 0 ? 'active' : ''}`; tabBtn.textContent = round.name; tabBtn.onclick = () => switchTab(round.id); tabsContainer.appendChild(tabBtn);  const col = document.createElement('div'); col.className = `round-column ${index === 0 ? 'active' : ''}`;
+                col.id = `round_${round.id}`;  const grid = document.createElement('div'); grid.className = 'matches-grid';  for (let i = 0; i < round.count; i++) { const m = matchNum; const mId = `m_${m}`;
+
+                    grid.innerHTML += `
+                        <div class="match-card" id="card_${mId}">
+                            <div class="match-header">
+                                <span>#${m}</span>
+                                <span id="${mId}_info">Pál: ${defaultLanes[m] || '1-2'}</span>
+                            </div>
+                            
+                            <div class="p-row" id="${mId}_p1_row">
+                                <span class="p-name" id="${mId}_p1_name">-</span>
+                                <div class="p-scores">
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p1_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p1_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p1_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p1_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p1_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p1_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p1_sets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-row" id="${mId}_p2_row">
+                                <span class="p-name" id="${mId}_p2_name">-</span>
+                                <div class="p-scores">
+                                    <div class="score-col">
+                                        <span class="score-label">Sz1</span>
+                                        <span class="score-box" id="${mId}_p2_s1">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv1_col">
+                                        <span class="score-label" style="color: var(--gold);">SV1</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv1"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">Sz2</span>
+                                        <span class="score-box" id="${mId}_p2_s2">-</span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_sv2_col">
+                                        <span class="score-label" style="color: var(--gold);">SV2</span>
+                                        <span class="score-box sv-box" id="${mId}_p2_sv2"></span>
+                                    </div>
+                                    <div class="score-col" id="${mId}_p2_msv_col">
+                                        <span class="score-label" style="color: #ef4444;">MSV</span>
+                                        <span class="score-box msv-box" id="${mId}_p2_msv"></span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label" style="color: var(--accent);">ÖF</span>
+                                        <span class="score-box of-box" id="${mId}_p2_of" title="Összes fa">-</span>
+                                    </div>
+                                    <div class="score-col">
+                                        <span class="score-label">SZP</span>
+                                        <span class="set-total" id="${mId}_p2_sets">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    matchNum++;
+                }
+
+                col.appendChild(grid);
+                bracket.appendChild(col);
+            });
+        }
+
+        function switchTab(roundId) {
+            const buttons = document.querySelectorAll('.tab-btn');
+            rounds.forEach((r, idx) => {
+                if (r.id === roundId) {
+                    buttons[idx].classList.add('active');
+                } else {
+                    buttons[idx].classList.remove('active');
+                }
+            });
+
+            const columns = document.querySelectorAll('.round-column');
+            columns.forEach(col => {
+                if (col.id === `round_${roundId}`) { col.classList.add('active'); } else { col.classList.remove('active'); } }); }  function renderExtraBox(id, val) { const el = document.getElementById(id); const col = document.getElementById(`${id}_col`);
+            if (!el) return;
+            
+            if (val !== null && val !== undefined && val !== '') {
+                el.textContent = val;
+                if (col) col.style.display = 'flex';
+                else el.style.display = 'inline-block';
+            } else {
+                el.textContent = '';
+                if (col) col.style.display = 'none';
+                else el.style.display = 'none';
+            }
+        }
+
+        // 1. Felület építése azonnal
+        initBracket();
+
+        // 2. Firebase kapcsolat
+        try {
+            const firebaseConfig = {
+                apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+                authDomain: "teke-eredmenyek.firebaseapp.com",
+                databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+                projectId: "teke-eredmenyek",
+                storageBucket: "teke-eredmenyek.firebasestorage.app"
+            };
+            
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const db = firebase.database();
+
+            db.ref('torna_32').on('value', snap => {
+                const data = snap.val() || {};
+
+                if (data.title) {
+                    document.getElementById('display_title').textContent = data.title;
+                }
+
+                for (let m = 1; m <= 31; m++) {
+                    const mId = `m_${m}`; const d = data[mId] \vert{}\vert{} {};  const lanes = d.lanes \vert{}\vert{} defaultLanes[m] \vert{}\vert{} '1-2'; const time = d.time ? ` \vert{} ${d.time}` : '';
+                    const infoEl = document.getElementById(`${mId}_info`); if (infoEl) infoEl.textContent = `P: ${lanes}${time}`;  const p1NameEl = document.getElementById(`${mId}_p1_name`);
+                    const p2NameEl = document.getElementById(`${mId}_p2_name`); if (p1NameEl) p1NameEl.textContent = d.p1_name \vert{}\vert{} '-'; if (p2NameEl) p2NameEl.textContent = d.p2_name \vert{}\vert{} '-';  const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;  const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1'); const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');  const s1_1_el = document.getElementById(`${mId}_p1_s1`);
+                    const s2_1_el = document.getElementById(`${mId}_p2_s1`); const s1_2_el = document.getElementById(`${mId}_p1_s2`);
+                    const s2_2_el = document.getElementById(`${mId}_p2_s2`);  if (s1_1_el) s1_1_el.textContent = s1_1 !== null ? s1_1 : '-'; if (s2_1_el) s2_1_el.textContent = s1_2 !== null ? s1_2 : '-'; if (s1_2_el) s1_2_el.textContent = s2_1 !== null ? s2_1 : '-'; if (s2_2_el) s2_2_el.textContent = s2_2 !== null ? s2_2 : '-';  const p1_of = (s1_1 !== null \vert{}\vert{} s2_1 !== null) ? ((s1_1 \vert{}\vert{} 0) + (s2_1 \vert{}\vert{} 0)) : '-'; const p2_of = (s1_2 !== null \vert{}\vert{} s2_2 !== null) ? ((s1_2 \vert{}\vert{} 0) + (s2_2 \vert{}\vert{} 0)) : '-';  const p1_of_el = document.getElementById(`${
