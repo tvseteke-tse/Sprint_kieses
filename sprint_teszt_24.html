@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sprint Torna Admin - 24 Fő (8 Kiemelt)</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --border: #334155;
+            --gold: #f59e0b;
+            --green: #10b981;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); padding: 15px; display: flex; flex-direction: column; min-height: 100vh; }
+
+        #status-bar {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+            background: #334155;
+            color: #f8fafc;
+        }
+        .status-success { background: #15803d !important; color: #fff !important; }
+        .status-error { background: #b91c1c !important; color: #fff !important; }
+
+        .header { display: flex; justify-content: space-between; align-items: center; background: var(--panel); padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; border: 1px solid var(--border); gap: 15px; flex-wrap: wrap; }
+        .header-title-input {
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--accent);
+            font-size: 1.4rem;
+            font-weight: bold;
+            flex: 1;
+            min-width: 250px;
+            outline: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+        }
+        .header-title-input:focus { background: #0f172a; border-color: var(--border); }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-import {
+            background: var(--green);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-import:hover { background: #059669; }
+
+        .btn-reset {
+            background: var(--danger);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .btn-reset:hover { background: var(--danger-hover); }
+
+        .tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px; overflow-x: auto; }
+        .tab-btn { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent); color: #0f172a; border-color: var(--accent); }
+
+        .content-area { flex-grow: 1; }
+        .round-pane { display: none; }
+        .round-pane.active { display: grid !important; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 15px; }
+
+        .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .match-header { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 4px; }
+        .bye-badge { color: var(--gold); font-size: 0.75rem; }
+
+        .p-row { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px; margin: 6px 0; border-radius: 6px; }
+
+        .admin-input {
+            background: #334155;
+            border: 1px solid #475569;
+            color: #ffffff;
+            padding: 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            display: inline-block;
+        }
+        .admin-input:focus { border-color: var(--accent); outline: none; }
+
+        .input-readonly { background: #1e293b; color: #94a3b8; border-color: #334155; cursor: not-allowed; }
+        .input-disabled { background: #0f172a; color: #475569; border-color: #1e293b; cursor: not-allowed; opacity: 0.4; }
+
+        .input-name { flex: 1; min-width: 110px; }
+        .input-num { width: 45px; text-align: center; }
+        .input-sv { width: 45px; text-align: center; border-color: var(--gold); color: var(--gold); }
+        .input-meta { width: 70px; text-align: center; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
+
+    <div class="header">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 24 Fő (8 Kiemelt)" onchange="saveTitle(this.value)">
+        <div class="header-actions">
+            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből (24 fő + 8 előnyerő)</button>
+            <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(0)">16 Közé Jutás</button>
+        <button class="tab-btn" onclick="switchTab(1)">Nyolcaddöntő</button>
+        <button class="tab-btn" onclick="switchTab(2)">Negyeddöntő</button>
+        <button class="tab-btn" onclick="switchTab(3)">Elődöntő</button>
+        <button class="tab-btn" onclick="switchTab(4)">Döntő</button>
+    </div>
+
+    <div class="content-area" id="panes-container"></div>
+
+    <script>
+        function showStatus(msg, isError = false) {
+            const sb = document.getElementById('status-bar');
+            sb.textContent = msg;
+            sb.className = isError ? 'status-error' : 'status-success';
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8o7xyCtxTJlQcM8z-29XTBOpBXrYbjOM",
+            authDomain: "teke-eredmenyek.firebaseapp.com",
+            databaseURL: "https://teke-eredmenyek-default-rtdb.firebaseio.com",
+            projectId: "teke-eredmenyek",
+            storageBucket: "teke-eredmenyek.firebasestorage.app"
+        };
+
+        let db = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            showStatus("Firebase csatlakozva. Adatok betöltése...");
+        } catch (e) {
+            showStatus("Firebase indítási hiba: " + e.message, true);
+        }
+
+        // 1-8. kiemelt automatikusan a nyolcaddöntőbe (m_17 - m_20) kerül;
+        // m_1 - m_8 győztesei a nyolcaddöntő másik ágára jutnak.
+        const progressionMap = {
+            1:  { targetMatch: 17, targetPos: 'p2' },
+            2:  { targetMatch: 18, targetPos: 'p2' },
+            3:  { targetMatch: 19, targetPos: 'p2' },
+            4:  { targetMatch: 20, targetPos: 'p2' },
+            5:  { targetMatch: 17, targetPos: 'p2' },
+            6:  { targetMatch: 18, targetPos: 'p2' },
+            7:  { targetMatch: 19, targetPos: 'p2' },
+            8:  { targetMatch: 20, targetPos: 'p2' },
+
+            9:  { targetMatch: 21, targetPos: 'p2' },
+            10: { targetMatch: 21, targetPos: 'p1' },
+            11: { targetMatch: 22, targetPos: 'p2' },
+            12: { targetMatch: 22, targetPos: 'p1' },
+            13: { targetMatch: 23, targetPos: 'p2' },
+            14: { targetMatch: 23, targetPos: 'p1' },
+            15: { targetMatch: 24, targetPos: 'p2' },
+            16: { targetMatch: 24, targetPos: 'p1' },
+
+            17: { targetMatch: 25, targetPos: 'p1' },
+            18: { targetMatch: 25, targetPos: 'p2' },
+            19: { targetMatch: 26, targetPos: 'p1' },
+            20: { targetMatch: 26, targetPos: 'p2' },
+            21: { targetMatch: 27, targetPos: 'p1' },
+            22: { targetMatch: 27, targetPos: 'p2' },
+            23: { targetMatch: 28, targetPos: 'p1' },
+            24: { targetMatch: 28, targetPos: 'p2' },
+
+            25: { targetMatch: 29, targetPos: 'p1' },
+            26: { targetMatch: 29, targetPos: 'p2' },
+            27: { targetMatch: 30, targetPos: 'p1' },
+            28: { targetMatch: 30, targetPos: 'p2' },
+
+            29: { targetMatch: 31, targetPos: 'p1' },
+            30: { targetMatch: 31, targetPos: 'p2' }
+        };
+
+        const defaultLanes = {
+            1: '1-2', 2: '3-4', 3: '1-2', 4: '3-4', 5: '1-2', 6: '3-4', 7: '1-2', 8: '3-4',
+            9: '1-2', 10: '3-4', 11: '1-2', 12: '3-4', 13: '1-2', 14: '3-4', 15: '1-2', 16: '3-4',
+            17: '1-2', 18: '3-4', 19: '1-2', 20: '3-4', 21: '1-2', 22: '3-4', 23: '1-2', 24: '3-4',
+            25: '1-2', 26: '3-4', 27: '1-2', 28: '3-4', 29: '1-2', 30: '3-4', 31: '1-2'
+        };
+
+        function generateDefaultTimes() {
+            const times = {};
+            let currentMinutes = 9 * 60;
+            for (let m = 1; m <= 31; m++) {
+                const hours = Math.floor(currentMinutes / 60).toString().padStart(2, '0');
+                const mins = (currentMinutes % 60).toString().padStart(2, '0');
+                times[m] = `${hours}:${mins}`;
+                if (m % 2 === 0) {
+                    currentMinutes += 30;
+                }
+            }
+            return times;
+        }
+
+        const defaultTimes = generateDefaultTimes();
+
+        function switchTab(idx) {
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
+            document.querySelectorAll('.round-pane').forEach((pane, i) => pane.classList.toggle('active', i === idx));
+        }
+
+        function initDOM() {
+            const container = document.getElementById('panes-container');
+            container.innerHTML = '';
+
+            const rounds = [
+                { name: '16 Közé Jutás', count: 16 },
+                { name: 'Nyolcaddöntő', count: 8 },
+                { name: 'Negyeddöntő', count: 4 },
+                { name: 'Elődöntő', count: 2 },
+                { name: 'Döntő', count: 1 }
+            ];
+
+            let matchNum = 1;
+
+            rounds.forEach((round, rIdx) => {
+                const paneDiv = document.createElement('div');
+                paneDiv.className = `round-pane ${rIdx === 0 ? 'active' : ''}`;
+                paneDiv.id = `pane_${rIdx}`;
+
+                for (let i = 0; i < round.count; i++) {
+                    const m = matchNum;
+                    const mId = `m_${m}`;
+                    const nameAttr = 'readonly class="admin-input input-name input-readonly"';
+                    const byeLabel = m <= 8 ? '<span class="bye-badge">1-8. kiemelt előnyerő → Nyolcaddöntő</span>' : '';
+
+                    paneDiv.innerHTML += `
+                        <div class="match-card">
+                            <div class="match-header">
+                                <span>Meccs #${m} ${byeLabel}</span>
+                                <div>
+                                    Pálya: <input type="text" id="${mId}_lanes" class="admin-input input-meta input-readonly" readonly onchange="updateDB('${mId}', 'lanes', this.value)">
+                                    Idő: <input type="text" id="${mId}_time" class="admin-input input-meta input-readonly" readonly>
+                                </div>
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="${mId}_p1_name" ${nameAttr} placeholder="Játékos 1">
+                                <input type="number" id="${mId}_p1_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p1_s1', this.value)">
+                                <input type="number" id="${mId}_p1_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p1_sv1', this.value)">
+                                <input type="number" id="${mId}_p1_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p1_s2', this.value)">
+                                <input type="number" id="${mId}_p1_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p1_sv2', this.value)">
+                                <input type="number" id="${mId}_p1_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p1_msv', this.value)">
+                            </div>
+                            <div class="p-row">
+                                <input type="text" id="${mId}_p2_name" ${nameAttr} placeholder="Játékos 2">
+                                <input type="number" id="${mId}_p2_s1" class="admin-input input-num" placeholder="Sz1" onchange="updateDB('${mId}', 'p2_s1', this.value)">
+                                <input type="number" id="${mId}_p2_sv1" class="admin-input input-sv input-disabled" disabled placeholder="SV1" onchange="updateDB('${mId}', 'p2_sv1', this.value)">
+                                <input type="number" id="${mId}_p2_s2" class="admin-input input-num" placeholder="Sz2" onchange="updateDB('${mId}', 'p2_s2', this.value)">
+                                <input type="number" id="${mId}_p2_sv2" class="admin-input input-sv input-disabled" disabled placeholder="SV2" onchange="updateDB('${mId}', 'p2_sv2', this.value)">
+                                <input type="number" id="${mId}_p2_msv" class="admin-input input-sv input-disabled" disabled placeholder="MSV" onchange="updateDB('${mId}', 'p2_msv', this.value)">
+                            </div>
+                        </div>
+                    `;
+                    matchNum++;
+                }
+                container.appendChild(paneDiv);
+            });
+        }
+
+        // 1-32; 2-31; 3-30... logika 24 főre:
+        // 1-8. kiemelt (index 0..7) előnyerőként automatikusan a nyolcaddöntőbe (m_17 - m_20) kerül.
+        // 9-24. helyezettek (index 8..23) játszanak egymás ellen az m_1 - m_8 meccseken (9 vs 24, 10 vs 23, ..., 16 vs 17).
+        function importFromEgyeni32() {
+            if (!db) return;
+            if (!confirm("Biztosan be szeretnéd importálni a versenyzőket (24 fő + 8 előnyerő)? Ez felülírja a jelenlegi táblát!")) return;
+
+            db.ref('egyeni_bowling/players').once('value').then(snapshot => {
+                const playersData = snapshot.val();
+                if (!playersData) {
+                    showStatus("Nem találhatók játékosok az egyeni_bowling/players ágon!", true);
+                    return;
+                }
+
+                let list = Array.isArray(playersData) ? playersData : Object.values(playersData);
+
+                let playerNames = list.map(p => {
+                    if (typeof p === 'string') return p.trim();
+                    return (p && (p.name || p.nev || p.player_name) ? String(p.name || p.nev || p.player_name).trim() : '');
+                }).filter(n => n !== '' && n !== '-');
+
+                if (playerNames.length < 24) {
+                    showStatus(`Csak ${playerNames.length} játékos található! Minimum 24 játékos szükséges.`, true);
+                    return;
+                }
+
+                // Első 24 játékos rangsor szerint (index 0 = 1. kiemelt, index 23 = 24. helyezett)
+                const top24 = playerNames.slice(0, 24);
+
+                // 1-8. kiemelt -> Nyolcaddöntő (m_17 - m_20)
+                // 1 vs 8 (m_17), 2 vs 7 (m_18), 3 vs 6 (m_19), 4 vs 5 (m_20)
+                const seededRoundOf16 = {
+                    m_17: { p1_name: top24[0], p2_name: '' },
+                    m_18: { p1_name: top24[1], p2_name: '' },
+                    m_19: { p1_name: top24[2], p2_name: '' },
+                    m_20: { p1_name: top24[3], p2_name: '' }
+                };
+
+                // 9-24. játékosok párosítása (index 8..23):
+                // m_1: 9. vs 24. (idx 8 vs 23)
+                // m_2: 10. vs 23. (idx 9 vs 22)
+                // ...
+                // m_8: 16. vs 17. (idx 15 vs 16)
+                const firstRoundMatchups = [];
+                for (let i = 0; i < 8; i++) {
+                    firstRoundMatchups.push({
+                        m: `m_${i + 1}`,
+                        p1: top24[8 + i],
+                        p2: top24[23 - i]
+                    });
+                }
+
+                let updates = {};
+
+                // Teljes torna_32 ág tiszta inicializálása az új 24 fős sorsolással
+                for (let m = 1; m <= 31; m++) {
+                    updates[`torna_32/m_${m}/p1_name`] = '';
+                    updates[`torna_32/m_${m}/p2_name`] = '';
+                    updates[`torna_32/m_${m}/p1_s1`] = '';
+                    updates[`torna_32/m_${m}/p2_s1`] = '';
+                    updates[`torna_32/m_${m}/p1_sv1`] = '';
+                    updates[`torna_32/m_${m}/p2_sv1`] = '';
+                    updates[`torna_32/m_${m}/p1_s2`] = '';
+                    updates[`torna_32/m_${m}/p2_s2`] = '';
+                    updates[`torna_32/m_${m}/p1_sv2`] = '';
+                    updates[`torna_32/m_${m}/p2_sv2`] = '';
+                    updates[`torna_32/m_${m}/p1_msv`] = '';
+                    updates[`torna_32/m_${m}/p2_msv`] = '';
+                }
+
+                firstRoundMatchups.forEach(match => {
+                    updates[`torna_32/${match.m}/p1_name`] = match.p1;
+                    updates[`torna_32/${match.m}/p2_name`] = match.p2;
+                });
+
+                // Kiemeltek (1-8) beemelése a nyolcaddöntőbe
+                // Az 5-8. kiemelt (top24[4..7]) előnyerőként az m_17-m_20 p2 vagy tartalék helyén várja az ellenfelet:
+                // Itt az 1-4. kiemelt p1-ként, az 5-8. kiemelt az m_17-m_20 p2 helyén indul (és ha az 1-8. meccs győztese jön, az adott ág kapja)
+                updates['torna_32/m_17/p1_name'] = top24[0]; // 1. kiemelt
+                updates['torna_32/m_18/p1_name'] = top24[1]; // 2. kiemelt
+                updates['torna_32/m_19/p1_name'] = top24[2]; // 3. kiemelt
+                updates['torna_32/m_20/p1_name'] = top24[3]; // 4. kiemelt
+
+                // 5-8. kiemelt (top24[4..7]) előnyerőként szintén a nyolcaddöntőbe kerül (m_21-m_24 p1)
+                updates['torna_32/m_21/p1_name'] = top24[4]; // 5. kiemelt
+                updates['torna_32/m_22/p1_name'] = top24[5]; // 6. kiemelt
+                updates['torna_32/m_23/p1_name'] = top24[6]; // 7. kiemelt
+                updates['torna_32/m_24/p1_name'] = top24[7]; // 8. kiemelt
+
+                db.ref().update(updates, (error) => {
+                    if (error) {
+                        showStatus("Importálási hiba: " + error.message, true);
+                    } else {
+                        showStatus("24 versenyző beimportálva: 1-8. kiemelt előnyerőként a nyolcaddöntőben, 9-24. sorsolva!");
+                    }
+                });
+            }).catch(err => {
+                showStatus("Hiba az adatok lekérésekor: " + err.message, true);
+            });
+        }
+
+        function resetTournamentData() {
+            if (!db) return;
+            const confirm1 = confirm("Biztosan törölni szeretnéd az ÖSSZES beírt eredményt és játékost?");
+            if (!confirm1) return;
+
+            const confirm2 = confirm("FIGYELEM: Ez a művelet végleges és azonnal töröl mindent a Firebase torna_32 ágáról! Biztosan folytatod?");
+            if (!confirm2) return;
+
+            db.ref('torna_32').remove()
+                .then(() => {
+                    showStatus("Az adatbázis sikeresen kiürítve!");
+                    document.querySelectorAll('input').forEach(input => {
+                        if (input.id !== 'admin_title') input.value = '';
+                    });
+                })
+                .catch(error => {
+                    showStatus("Hiba történt a törlés során: " + error.message, true);
+                });
+        }
+
+        function updateDB(mId, key, val) {
+            if (!db) return;
+            const isNum = key.includes('_s') || key.includes('_sv') || key.includes('_msv');
+            let parsedVal = val;
+
+            if (isNum) {
+                if (val === '') {
+                    parsedVal = '';
+                } else {
+                    parsedVal = parseInt(val, 10);
+                    if (key.endsWith('_s1') || key.endsWith('_s2')) {
+                        if (parsedVal > 180) {
+                            alert("A szett eredménye maximum 180 lehet!");
+                            document.getElementById(`${mId}_${key}`).value = '';
+                            parsedVal = '';
+                        }
+                    }
+                }
+            }
+
+            db.ref(`torna_32/${mId}/${key}`).set(parsedVal, (error) => {
+                if (error) showStatus("Mentési Hiba: " + error.message, true);
+                else showStatus("Adat sikeresen mentve!");
+            });
+        }
+
+        function saveTitle(val) {
+            if (!db) return;
+            db.ref('torna_32/title').set(val, (error) => {
+                if (error) showStatus("Cím mentési hiba: " + error.message, true);
+                else showStatus("Cím elmentve!");
+            });
+        }
+
+        function syncUI() {
+            if (!db) return;
+            db.ref('torna_32').on('value', snap => {
+                showStatus("Adatok szinkronizálva (Firebase OK)");
+                const data = snap.val() || {};
+
+                const titleEl = document.getElementById('admin_title');
+                if (titleEl && document.activeElement !== titleEl) {
+                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 24 Fő (8 Kiemelt)';
+                }
+
+                for (let m = 1; m <= 31; m++) {
+                    const mId = `m_${m}`;
+                    const mData = data[mId] || {};
+
+                    const fields = [
+                        'p1_name', 'p2_name', 'p1_s1', 'p2_s1', 'p1_sv1', 'p2_sv1',
+                        'p1_s2', 'p2_s2', 'p1_sv2', 'p2_sv2', 'p1_msv', 'p2_msv', 'lanes', 'time'
+                    ];
+
+                    fields.forEach(f => {
+                        const el = document.getElementById(`${mId}_${f}`);
+                        if (el && document.activeElement !== el) {
+                            let val = mData[f];
+                            if (val === undefined || val === null) {
+                                if (f === 'lanes') val = defaultLanes[m] || '';
+                                else if (f === 'time') val = defaultTimes[m] || '';
+                                else val = '';
+                            }
+                            el.value = val;
+                        }
+                    });
+
+                    processMatchRules(mId, mData);
+                }
+            }, error => {
+                showStatus("Olvasási Hiba: " + error.message, true);
+            });
+        }
+
+        function processMatchRules(mId, d) {
+            const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
+
+            const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
+            const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
+
+            const sv1Active = (s1_1 !== null && s1_2 !== null && s1_1 === s1_2 && s1_1 > 0);
+            toggleInput(`${mId}_p1_sv1`, sv1Active);
+            toggleInput(`${mId}_p2_sv1`, sv1Active);
+
+            const sv2Active = (s2_1 !== null && s2_2 !== null && s2_1 === s2_2 && s2_1 > 0);
+            toggleInput(`${mId}_p1_sv2`, sv2Active);
+            toggleInput(`${mId}_p2_sv2`, sv2Active);
+
+            let p1_sets = 0, p2_sets = 0;
+            let s1Finished = false, s2Finished = false;
+
+            if (s1_1 !== null && s1_2 !== null) {
+                if (s1_1 > s1_2) {
+                    p1_sets++;
+                    s1Finished = true;
+                } else if (s1_2 > s1_1) {
+                    p2_sets++;
+                    s1Finished = true;
+                } else {
+                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
+                    if (sv1_1 !== null && sv1_2 !== null && sv1_1 !== sv1_2) {
+                        if (sv1_1 > sv1_2) p1_sets++;
+                        else p2_sets++;
+                        s1Finished = true;
+                    }
+                }
+            }
+
+            if (s2_1 !== null && s2_2 !== null) {
+                if (s2_1 > s2_2) {
+                    p1_sets++;
+                    s2Finished = true;
+                } else if (s2_2 > s2_1) {
+                    p2_sets++;
+                    s2Finished = true;
+                } else {
+                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
+                    if (sv2_1 !== null && sv2_2 !== null && sv2_1 !== sv2_2) {
+                        if (sv2_1 > sv2_2) p1_sets++;
+                        else p2_sets++;
+                        s2Finished = true;
+                    }
+                }
+            }
+
+            const msvActive = (s1Finished && s2Finished && p1_sets === 1 && p2_sets === 1);
+            toggleInput(`${mId}_p1_msv`, msvActive);
+            toggleInput(`${mId}_p2_msv`, msvActive);
+
+            let winner = null;
+            let matchFinished = false;
+
+            if (s1Finished && s2Finished) {
+                if (p1_sets === 2) {
+                    winner = 1;
+                    matchFinished = true;
+                } else if (p2_sets === 2) {
+                    winner = 2;
+                    matchFinished = true;
+                } else if (msvActive) {
+                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
+                    if (msv1 !== null && msv2 !== null && msv1 !== msv2) {
+                        if (msv1 > msv2) winner = 1;
+                        else winner = 2;
+                        matchFinished = true;
+                    }
+                }
+            }
+
+            const matchNum = parseInt(mId.replace('m_', ''), 10);
+            const nextStep = progressionMap[matchNum];
+
+            if (nextStep) {
+                const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
+
+                if (matchFinished && winner) {
+                    const winnerName = winner === 1 ? d.p1_name : d.p2_name;
+                    if (winnerName) {
+                        db.ref(targetPath).transaction(currentVal => winnerName);
+                    }
+                }
+            }
+        }
+
+        function toggleInput(id, enable) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = !enable;
+            if (enable) el.classList.remove('input-disabled');
+            else el.classList.add('input-disabled');
+        }
+
+        initDOM();
+        syncUI();
+    </script>
+</body>
+</html>
