@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna Admin - 24 Fő (8 Kiemelt)</title>
+    <title>Sprint Torna Admin - 24 Fő (1-8. Előnyerők)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -91,7 +91,6 @@
 
         .match-card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         .match-header { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 4px; }
-        .bye-badge { color: var(--gold); font-size: 0.75rem; }
 
         .p-row { display: flex; align-items: center; gap: 6px; background: #0f172a; padding: 8px; margin: 6px 0; border-radius: 6px; }
 
@@ -121,9 +120,9 @@
     <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
 
     <div class="header">
-        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 24 Fő (8 Kiemelt)" onchange="saveTitle(this.value)">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 24 Fő (1-8. Előnyerők)" onchange="saveTitle(this.value)">
         <div class="header-actions">
-            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből (24 fő + 8 előnyerő)</button>
+            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből (1-8. előnyerő)</button>
             <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
         </div>
     </div>
@@ -162,17 +161,17 @@
             showStatus("Firebase indítási hiba: " + e.message, true);
         }
 
-        // 1-8. kiemelt automatikusan a nyolcaddöntőbe (m_17 - m_20) kerül;
-        // m_1 - m_8 győztesei a nyolcaddöntő másik ágára jutnak.
+        // Az 1-8. helyezett játékosok előnyerők -> Nyolcaddöntőbe (m_17 - m_24) kerülnek.
+        // Az 1. kör (m_1 - m_8) 9-24. helyezettjeinek győztesei jutnak tovább a nyolcaddöntő másik ágára.
         const progressionMap = {
             1:  { targetMatch: 17, targetPos: 'p2' },
             2:  { targetMatch: 18, targetPos: 'p2' },
             3:  { targetMatch: 19, targetPos: 'p2' },
             4:  { targetMatch: 20, targetPos: 'p2' },
-            5:  { targetMatch: 17, targetPos: 'p2' },
-            6:  { targetMatch: 18, targetPos: 'p2' },
-            7:  { targetMatch: 19, targetPos: 'p2' },
-            8:  { targetMatch: 20, targetPos: 'p2' },
+            5:  { targetMatch: 21, targetPos: 'p2' },
+            6:  { targetMatch: 22, targetPos: 'p2' },
+            7:  { targetMatch: 23, targetPos: 'p2' },
+            8:  { targetMatch: 24, targetPos: 'p2' },
 
             9:  { targetMatch: 21, targetPos: 'p2' },
             10: { targetMatch: 21, targetPos: 'p1' },
@@ -252,12 +251,11 @@
                     const m = matchNum;
                     const mId = `m_${m}`;
                     const nameAttr = 'readonly class="admin-input input-name input-readonly"';
-                    const byeLabel = m <= 8 ? '<span class="bye-badge">1-8. kiemelt előnyerő → Nyolcaddöntő</span>' : '';
 
                     paneDiv.innerHTML += `
                         <div class="match-card">
                             <div class="match-header">
-                                <span>Meccs #${m} ${byeLabel}</span>
+                                <span>Meccs #${m}</span>
                                 <div>
                                     Pálya: <input type="text" id="${mId}_lanes" class="admin-input input-meta input-readonly" readonly onchange="updateDB('${mId}', 'lanes', this.value)">
                                     Idő: <input type="text" id="${mId}_time" class="admin-input input-meta input-readonly" readonly>
@@ -287,12 +285,11 @@
             });
         }
 
-        // 1-32; 2-31; 3-30... logika 24 főre:
-        // 1-8. kiemelt (index 0..7) előnyerőként automatikusan a nyolcaddöntőbe (m_17 - m_20) kerül.
-        // 9-24. helyezettek (index 8..23) játszanak egymás ellen az m_1 - m_8 meccseken (9 vs 24, 10 vs 23, ..., 16 vs 17).
+        // 1-8. helyezett játékosok előnyerők (a nyolcaddöntőbe / legjobb 16 ágra kerülnek automatikusan).
+        // 9-24. helyezett játékosok (1-32, 2-31, 3-30... párosítási logika mentén) az 1. körben (m_1 - m_8) mérkőznek.
         function importFromEgyeni32() {
             if (!db) return;
-            if (!confirm("Biztosan be szeretnéd importálni a versenyzőket (24 fő + 8 előnyerő)? Ez felülírja a jelenlegi táblát!")) return;
+            if (!confirm("Biztosan be szeretnéd importálni a 24 játékost (1-8. helyezett előnyerők)? Ez felülírja a jelenlegi táblát!")) return;
 
             db.ref('egyeni_bowling/players').once('value').then(snapshot => {
                 const playersData = snapshot.val();
@@ -313,35 +310,13 @@
                     return;
                 }
 
-                // Első 24 játékos rangsor szerint (index 0 = 1. kiemelt, index 23 = 24. helyezett)
-                const top24 = playerNames.slice(0, 24);
-
-                // 1-8. kiemelt -> Nyolcaddöntő (m_17 - m_20)
-                // 1 vs 8 (m_17), 2 vs 7 (m_18), 3 vs 6 (m_19), 4 vs 5 (m_20)
-                const seededRoundOf16 = {
-                    m_17: { p1_name: top24[0], p2_name: '' },
-                    m_18: { p1_name: top24[1], p2_name: '' },
-                    m_19: { p1_name: top24[2], p2_name: '' },
-                    m_20: { p1_name: top24[3], p2_name: '' }
-                };
-
-                // 9-24. játékosok párosítása (index 8..23):
-                // m_1: 9. vs 24. (idx 8 vs 23)
-                // m_2: 10. vs 23. (idx 9 vs 22)
-                // ...
-                // m_8: 16. vs 17. (idx 15 vs 16)
-                const firstRoundMatchups = [];
-                for (let i = 0; i < 8; i++) {
-                    firstRoundMatchups.push({
-                        m: `m_${i + 1}`,
-                        p1: top24[8 + i],
-                        p2: top24[23 - i]
-                    });
-                }
+                // Rangsor szerinti 24 játékos:
+                // index 0..7  -> 1-8. helyezettek (előnyerők)
+                // index 8..23 -> 9-24. helyezettek (1. körös mérkőzések: 9. vs 24., 10. vs 23., ..., 16. vs 17.)
+                const ranked24 = playerNames.slice(0, 24);
 
                 let updates = {};
 
-                // Teljes torna_32 ág tiszta inicializálása az új 24 fős sorsolással
                 for (let m = 1; m <= 31; m++) {
                     updates[`torna_32/m_${m}/p1_name`] = '';
                     updates[`torna_32/m_${m}/p2_name`] = '';
@@ -357,30 +332,29 @@
                     updates[`torna_32/m_${m}/p2_msv`] = '';
                 }
 
-                firstRoundMatchups.forEach(match => {
-                    updates[`torna_32/${match.m}/p1_name`] = match.p1;
-                    updates[`torna_32/${match.m}/p2_name`] = match.p2;
-                });
+                // 9-24. helyezettek párosítása az 1. körben (m_1 - m_8)
+                for (let i = 0; i < 8; i++) {
+                    updates[`torna_32/m_${i + 1}/p1_name`] = ranked24[8 + i];
+                    updates[`torna_32/m_${i + 1}/p2_name`] = ranked24[23 - i];
+                }
 
-                // Kiemeltek (1-8) beemelése a nyolcaddöntőbe
-                // Az 5-8. kiemelt (top24[4..7]) előnyerőként az m_17-m_20 p2 vagy tartalék helyén várja az ellenfelet:
-                // Itt az 1-4. kiemelt p1-ként, az 5-8. kiemelt az m_17-m_20 p2 helyén indul (és ha az 1-8. meccs győztese jön, az adott ág kapja)
-                updates['torna_32/m_17/p1_name'] = top24[0]; // 1. kiemelt
-                updates['torna_32/m_18/p1_name'] = top24[1]; // 2. kiemelt
-                updates['torna_32/m_19/p1_name'] = top24[2]; // 3. kiemelt
-                updates['torna_32/m_20/p1_name'] = top24[3]; // 4. kiemelt
-
-                // 5-8. kiemelt (top24[4..7]) előnyerőként szintén a nyolcaddöntőbe kerül (m_21-m_24 p1)
-                updates['torna_32/m_21/p1_name'] = top24[4]; // 5. kiemelt
-                updates['torna_32/m_22/p1_name'] = top24[5]; // 6. kiemelt
-                updates['torna_32/m_23/p1_name'] = top24[6]; // 7. kiemelt
-                updates['torna_32/m_24/p1_name'] = top24[7]; // 8. kiemelt
+                // 1-8. helyezett előnyerők automatikus beemelése a nyolcaddöntőbe (m_17 - m_24)
+                // 1 vs 8 (m_17), 2 vs 7 (m_18), 3 vs 6 (m_19), 4 vs 5 (m_20)
+                // A többi ág a m_1 - m_8 győzteseivel töltődik fel a meccsek lejátszása után
+                updates['torna_32/m_17/p1_name'] = ranked24[0]; // 1. helyezett
+                updates['torna_32/m_18/p1_name'] = ranked24[1]; // 2. helyezett
+                updates['torna_32/m_19/p1_name'] = ranked24[2]; // 3. helyezett
+                updates['torna_32/m_20/p1_name'] = ranked24[3]; // 4. helyezett
+                updates['torna_32/m_21/p1_name'] = ranked24[4]; // 5. helyezett
+                updates['torna_32/m_22/p1_name'] = ranked24[5]; // 6. helyezett
+                updates['torna_32/m_23/p1_name'] = ranked24[6]; // 7. helyezett
+                updates['torna_32/m_24/p1_name'] = ranked24[7]; // 8. helyezett
 
                 db.ref().update(updates, (error) => {
                     if (error) {
                         showStatus("Importálási hiba: " + error.message, true);
                     } else {
-                        showStatus("24 versenyző beimportálva: 1-8. kiemelt előnyerőként a nyolcaddöntőben, 9-24. sorsolva!");
+                        showStatus("24 játékos beimportálva: 1-8. helyezettek előnyerőként a nyolcaddöntőben, 9-24. párosítva!");
                     }
                 });
             }).catch(err => {
@@ -450,7 +424,7 @@
 
                 const titleEl = document.getElementById('admin_title');
                 if (titleEl && document.activeElement !== titleEl) {
-                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 24 Fő (8 Kiemelt)';
+                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 24 Fő (1-8. Előnyerők)';
                 }
 
                 for (let m = 1; m <= 31; m++) {
