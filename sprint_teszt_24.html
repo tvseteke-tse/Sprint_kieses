@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprint Torna Admin - 24 Fő (1-8. Előnyerők)</title>
+    <title>Sprint Torna Admin - 24 Fő (1-8. Helyezettek)</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
@@ -120,9 +120,9 @@
     <div id="status-bar">Firebase kapcsolat ellenőrzése...</div>
 
     <div class="header">
-        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 24 Fő (1-8. Előnyerők)" onchange="saveTitle(this.value)">
+        <input type="text" id="admin_title" class="header-title-input" value="Sprint Torna Admin - 24 Fő (1-8. Helyezettek)" onchange="saveTitle(this.value)">
         <div class="header-actions">
-            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből (1-8. előnyerő)</button>
+            <button class="btn-import" onclick="importFromEgyeni32()">Importálás Egyéni 32-ből (1-8. kiemelve)</button>
             <button class="btn-reset" onclick="resetTournamentData()">⚠️ Adatok törlése az admin felületről</button>
         </div>
     </div>
@@ -161,16 +161,16 @@
             showStatus("Firebase indítási hiba: " + e.message, true);
         }
 
-        // Az 1-8. helyezett játékosok előnyerők -> Nyolcaddöntőbe (m_17 - m_24) kerülnek.
-        // Az 1. kör (m_1 - m_8) 9-24. helyezettjeinek győztesei jutnak tovább a nyolcaddöntő másik ágára.
+        // Az 1-8. helyezett játékosok előnyerők, név szerint kitöltve a nyolcaddöntőben (m_17 - m_20).
+        // A 9-24. helyezett játékosok az m_1 - m_8 meccseken játszanak, győzteseik a m_21 - m_24 ágra kerülnek.
         const progressionMap = {
-            1:  { targetMatch: 17, targetPos: 'p2' },
-            2:  { targetMatch: 18, targetPos: 'p2' },
-            3:  { targetMatch: 19, targetPos: 'p2' },
-            4:  { targetMatch: 20, targetPos: 'p2' },
-            5:  { targetMatch: 21, targetPos: 'p2' },
-            6:  { targetMatch: 22, targetPos: 'p2' },
-            7:  { targetMatch: 23, targetPos: 'p2' },
+            1:  { targetMatch: 21, targetPos: 'p1' },
+            2:  { targetMatch: 21, targetPos: 'p2' },
+            3:  { targetMatch: 22, targetPos: 'p1' },
+            4:  { targetMatch: 22, targetPos: 'p2' },
+            5:  { targetMatch: 23, targetPos: 'p1' },
+            6:  { targetMatch: 23, targetPos: 'p2' },
+            7:  { targetMatch: 24, targetPos: 'p1' },
             8:  { targetMatch: 24, targetPos: 'p2' },
 
             9:  { targetMatch: 21, targetPos: 'p2' },
@@ -285,11 +285,11 @@
             });
         }
 
-        // 1-8. helyezett játékosok előnyerők (a nyolcaddöntőbe / legjobb 16 ágra kerülnek automatikusan).
-        // 9-24. helyezett játékosok (1-32, 2-31, 3-30... párosítási logika mentén) az 1. körben (m_1 - m_8) mérkőznek.
+        // Az 1-8. helyezettek nevei közvetlenül kitöltik a nyolcaddöntő meccseit (1 vs 8, 2 vs 7, 3 vs 6, 4 vs 5).
+        // A 9-24. helyezettek a 1-32, 2-31, 3-30... sorsolás alapján az 1. körben (m_1 - m_8) mérkőznek.
         function importFromEgyeni32() {
             if (!db) return;
-            if (!confirm("Biztosan be szeretnéd importálni a 24 játékost (1-8. helyezett előnyerők)? Ez felülírja a jelenlegi táblát!")) return;
+            if (!confirm("Biztosan be szeretnéd importálni a 24 játékost (az 1-8. helyezettek nevével kitöltve)? Ez felülírja a jelenlegi táblát!")) return;
 
             db.ref('egyeni_bowling/players').once('value').then(snapshot => {
                 const playersData = snapshot.val();
@@ -310,11 +310,7 @@
                     return;
                 }
 
-                // Rangsor szerinti 24 játékos:
-                // index 0..7  -> 1-8. helyezettek (előnyerők)
-                // index 8..23 -> 9-24. helyezettek (1. körös mérkőzések: 9. vs 24., 10. vs 23., ..., 16. vs 17.)
                 const ranked24 = playerNames.slice(0, 24);
-
                 let updates = {};
 
                 for (let m = 1; m <= 31; m++) {
@@ -332,29 +328,27 @@
                     updates[`torna_32/m_${m}/p2_msv`] = '';
                 }
 
-                // 9-24. helyezettek párosítása az 1. körben (m_1 - m_8)
+                // 9-24. helyezettek párosítása az m_1 - m_8 meccseken (9 vs 24, 10 vs 23, ..., 16 vs 17)
                 for (let i = 0; i < 8; i++) {
                     updates[`torna_32/m_${i + 1}/p1_name`] = ranked24[8 + i];
                     updates[`torna_32/m_${i + 1}/p2_name`] = ranked24[23 - i];
                 }
 
-                // 1-8. helyezett előnyerők automatikus beemelése a nyolcaddöntőbe (m_17 - m_24)
-                // 1 vs 8 (m_17), 2 vs 7 (m_18), 3 vs 6 (m_19), 4 vs 5 (m_20)
-                // A többi ág a m_1 - m_8 győzteseivel töltődik fel a meccsek lejátszása után
+                // 1-8. helyezett nevének közvetlen beírása a nyolcaddöntőbe (m_17 - m_20)
                 updates['torna_32/m_17/p1_name'] = ranked24[0]; // 1. helyezett
+                updates['torna_32/m_17/p2_name'] = ranked24[7]; // 8. helyezett
                 updates['torna_32/m_18/p1_name'] = ranked24[1]; // 2. helyezett
+                updates['torna_32/m_18/p2_name'] = ranked24[6]; // 7. helyezett
                 updates['torna_32/m_19/p1_name'] = ranked24[2]; // 3. helyezett
+                updates['torna_32/m_19/p2_name'] = ranked24[5]; // 6. helyezett
                 updates['torna_32/m_20/p1_name'] = ranked24[3]; // 4. helyezett
-                updates['torna_32/m_21/p1_name'] = ranked24[4]; // 5. helyezett
-                updates['torna_32/m_22/p1_name'] = ranked24[5]; // 6. helyezett
-                updates['torna_32/m_23/p1_name'] = ranked24[6]; // 7. helyezett
-                updates['torna_32/m_24/p1_name'] = ranked24[7]; // 8. helyezett
+                updates['torna_32/m_20/p2_name'] = ranked24[4]; // 5. helyezett
 
                 db.ref().update(updates, (error) => {
                     if (error) {
                         showStatus("Importálási hiba: " + error.message, true);
                     } else {
-                        showStatus("24 játékos beimportálva: 1-8. helyezettek előnyerőként a nyolcaddöntőben, 9-24. párosítva!");
+                        showStatus("Sikeres importálás: az 1-8. helyezettek nevei kitöltve, 9-24. párosítva!");
                     }
                 });
             }).catch(err => {
@@ -424,7 +418,7 @@
 
                 const titleEl = document.getElementById('admin_title');
                 if (titleEl && document.activeElement !== titleEl) {
-                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 24 Fő (1-8. Előnyerők)';
+                    titleEl.value = data.title !== undefined ? data.title : 'Sprint Torna Admin - 24 Fő (1-8. Helyezettek)';
                 }
 
                 for (let m = 1; m <= 31; m++) {
