@@ -215,40 +215,47 @@
             });
         }
 
-        function extractScore(p) {
-            const keys = ['total', 'score', 'points', 'pont', 'fa', 'eredmeny', 'osszes'];
-            for (let i = 0; i < keys.length; i++) {
-                const k = keys[i];
-                if (p[k] !== undefined && p[k] !== null && p[k] !== '') {
-                    const num = parseFloat(p[k]);
-                    if (!isNaN(num)) return num;
-                }
-            }
-            return 0;
-        }
-
         function importFromEgyeni32() {
             if (!db) return;
             if (!confirm("Biztosan be szeretnéd importálni az Egyéni 32 versenyzőit? Ez felülírja a jelenlegi neveket!")) return;
+
             db.ref('egyeni_bowling/players').once('value').then(snapshot => {
                 const playersData = snapshot.val();
                 if (!playersData) {
                     showStatus("Nem találhatók játékosok az egyeni_bowling/players ágon!", true);
                     return;
                 }
+
                 let list = Array.isArray(playersData) ? playersData : Object.values(playersData);
-                let sortedPlayers = list.map(p => {
-                    if (typeof p === 'string') return { name: p, score: 0 };
-                    const name = p.name || p.nev || p.player_name || '-';
-                    const score = extractScore(p);
-                    return { name: name, score: score };
+                
+                // Szűrés és adatok előkészítése az egyeni_kijelzo_32.html alapján
+                let validPlayers = list.map(p => {
+                    if (typeof p === 'string') {
+                        return { name: p, total: 0, tarol: 0, ures: 0 };
+                    }
+                    return {
+                        name: p.name || p.nev || p.player_name || '-',
+                        total: Number(p.total) || 0,
+                        tarol: Number(p.tarol) || 0,
+                        ures: Number(p.ures) || 0
+                    };
                 }).filter(p => p.name !== '-');
-                sortedPlayers.sort((a, b) => b.score - a.score);
-                let playerNames = sortedPlayers.map(p => p.name);
-                if (playerNames.length < 32) {
-                    showStatus(`Csak ${playerNames.length} játékos található! A 32-es táblához 32 játékos szükséges.`, true);
+
+                if (validPlayers.length < 32) {
+                    showStatus(`Csak ${validPlayers.length} játékos található! A 32-es táblához 32 játékos szükséges.`, true);
                     return;
                 }
+
+                // Pontos rangsorolás: 1. Össz fa (csökkenő), 2. Tarolás (csökkenő), 3. Üres (növekvő)
+                validPlayers.sort((a, b) => {
+                    if (b.total !== a.total) return b.total - a.total;
+                    if (b.tarol !== a.tarol) return b.tarol - a.tarol;
+                    if (a.ures !== b.ures) return a.ures - b.ures;
+                    return 0;
+                });
+
+                let playerNames = validPlayers.map(p => p.name);
+
                 const matchups = [
                     { m: 'm_1',  p1: 28, p2: 3  }, { m: 'm_2',  p1: 2,  p2: 29 },
                     { m: 'm_3',  p1: 12, p2: 19 }, { m: 'm_4',  p1: 18, p2: 13 },
@@ -259,14 +266,16 @@
                     { m: 'm_13', p1: 16, p2: 15 }, { m: 'm_14', p1: 14, p2: 17 },
                     { m: 'm_15', p1: 31, p2: 0  }, { m: 'm_16', p1: 30, p2: 1  }
                 ];
+
                 let updates = {};
                 matchups.forEach(match => {
                     updates[`torna_32/${match.m}/p1_name`] = playerNames[match.p1];
                     updates[`torna_32/${match.m}/p2_name`] = playerNames[match.p2];
                 });
+
                 db.ref().update(updates, (error) => {
                     if (error) showStatus("Importálási hiba: " + error.message, true);
-                    else showStatus("32 játékos sikeresen beimportálva pontszám szerinti sorrendben!", false);
+                    else showStatus("32 játékos sikeresen beimportálva a hivatalos ranglista (Össz / Tarol / Üres) szerint!", false);
                 });
             }).catch(err => {
                 showStatus("Hiba az adatok lekérésekor: " + err.message, true);
@@ -358,79 +367,4 @@
 
         function processMatchRules(mId, d) {
             const getVal = (k) => (d[k] !== undefined && d[k] !== '') ? parseInt(d[k], 10) : null;
-            const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1');
-            const s2_1 = getVal('p1_s2'), s2_2 = getVal('p2_s2');
-            const sv1Active = (s1_1 !== null && s1_2 !== null && s1_1 === s1_2 && s1_1 > 0);
-            toggleInput(`${mId}_p1_sv1`, sv1Active);
-            toggleInput(`${mId}_p2_sv1`, sv1Active);
-            const sv2Active = (s2_1 !== null && s2_2 !== null && s2_1 === s2_2 && s2_1 > 0);
-            toggleInput(`${mId}_p1_sv2`, sv2Active);
-            toggleInput(`${mId}_p2_sv2`, sv2Active);
-            let p1_sets = 0, p2_sets = 0;
-            let s1Finished = false, s2Finished = false;
-            if (s1_1 !== null && s1_2 !== null) {
-                if (s1_1 > s1_2) { p1_sets++; s1Finished = true; }
-                else if (s1_2 > s1_1) { p2_sets++; s1Finished = true; }
-                else {
-                    const sv1_1 = getVal('p1_sv1'), sv1_2 = getVal('p2_sv1');
-                    if (sv1_1 !== null && sv1_2 !== null && sv1_1 !== sv1_2) {
-                        if (sv1_1 > sv1_2) p1_sets++; else p2_sets++;
-                        s1Finished = true;
-                    }
-                }
-            }
-            if (s2_1 !== null && s2_2 !== null) {
-                if (s2_1 > s2_2) { p1_sets++; s2Finished = true; }
-                else if (s2_2 > s2_1) { p2_sets++; s2Finished = true; }
-                else {
-                    const sv2_1 = getVal('p1_sv2'), sv2_2 = getVal('p2_sv2');
-                    if (sv2_1 !== null && sv2_2 !== null && sv2_1 !== sv2_2) {
-                        if (sv2_1 > sv2_2) p1_sets++; else p2_sets++;
-                        s2Finished = true;
-                    }
-                }
-            }
-            const msvActive = (s1Finished && s2Finished && p1_sets === 1 && p2_sets === 1);
-            toggleInput(`${mId}_p1_msv`, msvActive);
-            toggleInput(`${mId}_p2_msv`, msvActive);
-            let winner = null;
-            let matchFinished = false;
-            if (s1Finished && s2Finished) {
-                if (p1_sets === 2) { winner = 1; matchFinished = true; }
-                else if (p2_sets === 2) { winner = 2; matchFinished = true; }
-                else if (msvActive) {
-                    const msv1 = getVal('p1_msv'), msv2 = getVal('p2_msv');
-                    if (msv1 !== null && msv2 !== null && msv1 !== msv2) {
-                        if (msv1 > msv2) winner = 1; else winner = 2;
-                        matchFinished = true;
-                    }
-                }
-            }
-            const matchNum = parseInt(mId.replace('m_', ''), 10);
-            const nextStep = progressionMap[matchNum];
-            if (nextStep) {
-                const targetPath = `torna_32/m_${nextStep.targetMatch}/${nextStep.targetPos}_name`;
-                if (matchFinished && winner) {
-                    const winnerName = winner === 1 ? d.p1_name : d.p2_name;
-                    if (winnerName) {
-                        db.ref(targetPath).transaction(currentVal => winnerName);
-                    }
-                } else {
-                    db.ref(targetPath).transaction(currentVal => '');
-                }
-            }
-        }
-
-        function toggleInput(id, enable) {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.disabled = !enable;
-            if (enable) el.classList.remove('input-disabled');
-            else el.classList.add('input-disabled');
-        }
-
-        initDOM();
-        syncUI();
-    </script>
-</body>
-</html>
+            const s1_1 = getVal('p1_s1'), s1_2 = getVal('p2_s1
